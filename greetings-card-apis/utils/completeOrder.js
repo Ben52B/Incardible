@@ -44,7 +44,10 @@ async function completeTransaction(transactionId, {checkoutId = null, paymentInt
                 MAIL_FROM: process.env.MAIL_FROM,
                 APP_NAME: process.env.APP_NAME,
             };
-            const result = await send_purchase_confirmation_email(env, tx);
+            // The email helper looks the user up by id itself.
+            const emailTx = tx.toObject();
+            emailTx.user_id = (tx.user_id && tx.user_id._id) ? tx.user_id._id : tx.user_id;
+            const result = await send_purchase_confirmation_email(env, emailTx);
             if (!result || !result.success) {
                 console.warn('[order] confirmation email not sent:', result && result.reason);
             }
