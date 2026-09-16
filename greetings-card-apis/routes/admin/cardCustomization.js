@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {
+const {getCardTargetStatus, compileCardTarget: compileCardTargetHandler, 
     createCard,
     getAllCards,
     uploadFrontDesign,
@@ -56,6 +56,8 @@ router.post('/:uuid/view', addCardViews);
 
 
 router.delete('/destroy/:id', middleWare, destroyCard);
+router.get('/target-status/:uuid', middleWare, getCardTargetStatus);
+router.post('/compile-target/:uuid', middleWare, compileCardTargetHandler);
 router.post('/upload-front-design', [middleWare, uploadImageMiddleware('Cards').single('frontDesign')], uploadFrontDesign);
 router.post('/upload-envelope', [middleWare, uploadImageMiddleware('Cards').single('envelope')], uploadEnvelope);
 router.post('/upload-back-design', [middleWare, uploadImageMiddleware('Cards').single('backDesign')], uploadBackDesign);

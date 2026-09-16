@@ -524,14 +524,33 @@ exports.getUserArExperience = async (req, res) => {
         }
 
 
+        const abs = (rel) => {
+            if (!rel) return null;
+            const r = String(rel).replace(/\\/g, '/');
+            return /^https?:\/\//i.test(r) ? r : `${BACKEND_URL}/${r.replace(/^\/+/, '')}`;
+        };
+        const card = userArExperience.cardId || {};
+        const tt = card.trackingTarget || {};
+        const tracking = tt.status === 'ready' && tt.path ? {
+            status: 'ready',
+            url: abs(tt.path),
+            targets: (tt.targets || []).map(t => ({face: t.face, width: t.width, height: t.height, quality: t.quality})),
+            compiledAt: tt.compiledAt,
+        } : {status: tt.status || 'none'};
+
         let resposne = {
+            id: userArExperience._id,
+            isPaid: !!userArExperience.isPaid,
             cardId: {
-                frontDesign: BACKEND_URL + "/" + userArExperience?.cardId?.frontDesign,
-                backDesign: BACKEND_URL + "/" + userArExperience?.cardId?.backDesign,
-                insideLeftDesign: BACKEND_URL + "/" + userArExperience?.cardId?.insideLeftDesign,
-                insideRightDesign: BACKEND_URL + "/" + userArExperience?.cardId?.insideRightDesign,
-                video: BACKEND_URL + "/" + userArExperience?.cardId?.video,
+                _id: card._id,
+                title: card.title || null,
+                frontDesign: abs(card.frontDesign),
+                backDesign: abs(card.backDesign),
+                insideLeftDesign: abs(card.insideLeftDesign),
+                insideRightDesign: abs(card.insideRightDesign),
+                video: abs(card.video),
             },
+            tracking,
             arTemplateData: userArExperience?.arTemplateData,
             templateImage0: userArExperience?.templateImage0,
             templateImage1: userArExperience?.templateImage1,
@@ -547,7 +566,7 @@ exports.getUserArExperience = async (req, res) => {
             templateVideo: userArExperience?.templateVideo,
         }
 
-
+        res.set('Cache-Control', 'no-store');
         return success_response(res, 200, "User ar experience get successfully", resposne);
     } catch (error) {
         console.log(error);
