@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const middleWare = require('../../middleware/auth');
+const middleWare = require('../../middleware/admin');
 const {
     getMostPopularCards,
     getMostPopularARExperiences,

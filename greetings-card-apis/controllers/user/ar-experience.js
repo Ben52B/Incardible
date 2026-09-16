@@ -5,6 +5,17 @@ const TransactionData = require('../../models/transactionData');
 const BACKEND_URL = process.env.API_URL;
 const WEB_URL = process.env.APP_URL;
 
+// A customisation is addressed by its uuid from the studio / phone-upload QR.
+// Paid or logged-in customers live in CardCustomization, guests in TempTemplate;
+// the server decides which, never a client-supplied flag.
+async function findTemplateByUuid(uuid) {
+    if (!uuid || typeof uuid !== 'string') return null;
+    const paid = await CardCustomization.findOne({uuid});
+    if (paid) return paid;
+    return TempTemplate.findOne({uuid});
+}
+exports.findTemplateByUuid = findTemplateByUuid;
+
 // exports.uploadGalleryImages = async (req, res) => {
 //     try {
 //         const {userId} = req.body;
@@ -154,17 +165,11 @@ exports.uploadImageThroughQrScanningSpecificIndex = async (req, res) => {
             return error_response(res, 400, "All inputs are required!");
         }
 
-        index = parseInt(index);
-        let userTemplateData;
-
-        if (isAuthenticated) {
-            // Authenticated users → CardCustomization table
-            userTemplateData = await CardCustomization.findOne({uuid});
-
-        } else {
-            // Guest users → TempTemplate table
-            userTemplateData = await TempTemplate.findOne({uuid});
+        index = parseInt(index, 10);
+        if (!Number.isInteger(index) || index < 0 || index > 10) {
+            return error_response(res, 400, "Invalid image index");
         }
+        const userTemplateData = await findTemplateByUuid(uuid);
 
         if (!userTemplateData) {
             return error_response(res, 404, "User AR template data not found!");
@@ -250,16 +255,7 @@ exports.uploadVideoThroughQrScanningSpecificIndex = async (req, res) => {
             return error_response(res, 400, "User id is required!");
         }
 
-        let userTemplateData;
-        if (isAuthenticated) {
-            // Authenticated users → CardCustomization table
-            userTemplateData = await CardCustomization.findOne({uuid});
-
-        } else {
-            // Guest users → TempTemplate table
-
-            userTemplateData = await TempTemplate.findOne({uuid});
-        }
+        const userTemplateData = await findTemplateByUuid(uuid);
 
         if (!userTemplateData) {
             return error_response(res, 404, "User AR template data not found!");
@@ -349,15 +345,7 @@ exports.delete0IndexContentFromMobile = async (req, res) => {
             return error_response(res, 400, "All inputs are required!");
         }
 
-        let userTemplateData;
-        if (isAuthenticated) {
-            // Authenticated users → CardCustomization table
-            userTemplateData = await CardCustomization.findOne({uuid});
-
-        } else {
-            // Guest users → TempTemplate table
-            userTemplateData = await TempTemplate.findOne({uuid});
-        }
+        const userTemplateData = await findTemplateByUuid(uuid);
 
         if (!userTemplateData) {
             return error_response(res, 404, "User AR template data not found!");
@@ -594,11 +582,16 @@ exports.deleteUserCustomizeCard = async (req, res) => {
             return error_response(res, 400, "Id is required!");
         }
 
-        // Update instead of deleting
-        const updatedCard = await CardCustomization.findByIdAndUpdate(
-            id,
+        const User = require('../../models/user');
+        const me = await User.findById(req.user.user_id).select('email').lean();
+        if (!me) {
+            return error_response(res, 401, "User not found");
+        }
+        // Soft-delete, and only the owner may do it.
+        const updatedCard = await CardCustomization.findOneAndUpdate(
+            { _id: id, $or: [{userId: String(req.user.user_id)}, {email: me.email}] },
             { $set: { deleteMyCard: true } },
-            { new: true } // return updated doc
+            { new: true }
         );
 
         if (!updatedCard) {

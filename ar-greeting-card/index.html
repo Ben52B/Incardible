@@ -7,7 +7,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>Unity WebGL Player | My project</title>
+    <title>Incardible AR Card</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico" />
     <link rel="stylesheet" href="TemplateData/style.css" />
     <link rel="manifest" href="manifest.webmanifest" />
@@ -1202,11 +1202,10 @@
           // Reset the timer
           backgroundStartTime = null;
 
-          /* ➤ 1 minute passed → redirect */
+          /* Returning after any amount of time: keep the recipient in the
+             experience and simply restart the camera. */
           if (elapsed >= TIMEOUT_LIMIT) {
-            console.log("⛔ Over 1 minute away → redirecting");
-            window.location.href = "https://www.google.com";
-            return;
+            console.log("Returned after", elapsed, "ms away; restarting camera");
           }
 
           /* ➤ Less than 1 minute → resume normally */

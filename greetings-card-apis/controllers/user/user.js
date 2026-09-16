@@ -296,11 +296,29 @@ exports.forget = async (req, res) => {
 
 exports.reset = async (req, res) => {
     try {
-        const {code, password, confirmPassword} = req.body;
-        const verifyUser = await TempUser.findOne({code});
+        const {code, password, confirmPassword, email: bodyEmail} = req.body;
+        if (typeof code !== 'string' || !/^\d{6}$/.test(code.trim())) {
+            return error_response(res, 400, "Invalid code");
+        }
+        const query = {code: code.trim()};
+        if (bodyEmail) query.email = String(bodyEmail).toLowerCase();
+        const verifyUser = await TempUser.findOne(query);
 
         if (!verifyUser) {
             return error_response(res, 400, "Invalid code");
+        }
+        const ageMs = Date.now() - new Date(verifyUser.createdAt || 0).getTime();
+        if (ageMs > 10 * 60 * 1000) {
+            await TempUser.deleteOne({_id: verifyUser._id});
+            return error_response(res, 400, "This code has expired. Please request a new one.");
+        }
+        if ((verifyUser.attempts || 0) >= 5) {
+            await TempUser.deleteOne({_id: verifyUser._id});
+            return error_response(res, 400, "Too many attempts. Please request a new code.");
+        }
+        await TempUser.updateOne({_id: verifyUser._id}, {$inc: {attempts: 1}});
+        if (typeof password !== 'string' || password.length < 8) {
+            return error_response(res, 400, "Password must be at least 8 characters");
         }
 
         let user;
@@ -594,9 +612,34 @@ exports.auth = async (req, res) => {
 //     }
 // }
 
+// Google sign-in: the browser must send the Google ID token it received from
+// next-auth; the identity (email, name) comes from the verified token, never
+// from the request body.
+const {OAuth2Client} = require('google-auth-library');
+const googleClient = new OAuth2Client();
 exports.signIn_with_google = async (req, res) => {
     try {
-        const {email, name} = req.body;
+        const {idToken} = req.body || {};
+        if (!idToken) {
+            return error_response(res, 400, "Google ID token is required");
+        }
+        const audience = (process.env.GOOGLE_CLIENT_ID || '').split(',').map(s => s.trim()).filter(Boolean);
+        if (!audience.length) {
+            console.error('GOOGLE_CLIENT_ID is not configured');
+            return error_response(res, 500, "Google sign-in is not configured");
+        }
+        let ticket;
+        try {
+            ticket = await googleClient.verifyIdToken({idToken, audience});
+        } catch (e) {
+            return error_response(res, 401, "Invalid Google token");
+        }
+        const claims = ticket.getPayload() || {};
+        if (!claims.email || claims.email_verified === false) {
+            return error_response(res, 401, "Google account email is not verified");
+        }
+        const email = String(claims.email).toLowerCase();
+        const name = claims.name || claims.given_name || email.split('@')[0];
         const checkUser = await User.findOne({email});
         if (checkUser) {
             const payload = {user_id: checkUser._id, user_email: checkUser.email}
@@ -630,48 +673,34 @@ exports.signIn_with_google = async (req, res) => {
 
 exports.editZeroIndexData = async (req, res) => {
     try {
-        let {uuid, isImage, isAuthenticated, index} = req.body;
-        isAuthenticated = isAuthenticated === true || isAuthenticated === "true";
+        let {uuid, isImage, index} = req.body;
 
         if (!uuid || index === undefined || index === null) {
             return error_response(res, 400, "All inputs are required!");
         }
-
-        let templateData;
-
-        if (!isAuthenticated) {
-            templateData = await TempTemplate.findOne({uuid});
-
-            if (!templateData) {
-                return error_response(res, 400, "User template data not found!");
-            }
-
-            if (isImage == 1) {
-                templateData[`templateImage${index}`] = null;
-            } else {
-                templateData.templateVideo = null;
-            }
-            await templateData.save();
-            return success_response(res, 200, "Image deleted successfully", templateData);
-        }else{
-            templateData = await CardCustomization.findOne({uuid});
-
-            if (!templateData) {
-                return error_response(res, 400, "User template data not found!");
-            }
-
-            if (isImage == 1) {
-                templateData[`templateImage${index}`] = null;
-            } else {
-                templateData.templateVideo = null;
-            }
-            await templateData.save();
-
-            return success_response(res, 200, "Image deleted successfully", templateData);
-
+        const idx = parseInt(index, 10);
+        if (!Number.isInteger(idx) || idx < 0 || idx > 10) {
+            return error_response(res, 400, "Invalid index");
         }
 
+        // Resolve by uuid across paid and guest collections (server decides).
+        let templateData = await CardCustomization.findOne({uuid});
+        if (!templateData) templateData = await TempTemplate.findOne({uuid});
+        if (!templateData) {
+            return error_response(res, 400, "User template data not found!");
+        }
 
+        if (isImage == 1 || isImage === true || isImage === 'true') {
+            templateData[`templateImage${idx}`] = null;
+        } else {
+            templateData.templateVideo = null;
+            if (templateData.arTemplateData && typeof templateData.arTemplateData === 'object') {
+                templateData.arTemplateData = {...templateData.arTemplateData, videoUrl: null};
+                templateData.markModified && templateData.markModified('arTemplateData');
+            }
+        }
+        await templateData.save();
+        return success_response(res, 200, "Content deleted successfully", templateData);
     } catch (error) {
         console.log(error);
         return error_response(res, 500, error.message);
@@ -681,15 +710,20 @@ exports.editZeroIndexData = async (req, res) => {
 
 exports.getAllLoginUserSaveCards = async (req, res) => {
     try {
-        const {email} = req.params;
-        // const userId = req.user.user_id;
-        // const email = req.user.email;
-
-        if (!email) {
-            return error_response(res, 400, "Email is required!");
+        // The email in the URL is only accepted if it belongs to the caller.
+        const me = await User.findById(req.user.user_id).select('email').lean();
+        if (!me) {
+            return error_response(res, 401, "User not found");
+        }
+        const email = me.email;
+        if (req.params.email && req.params.email.toLowerCase() !== String(email).toLowerCase()) {
+            return error_response(res, 403, "You can only view your own cards");
         }
 
-        const getUserSaveCards = await CardCustomization.find({email}).sort({createdAt: -1}).populate('cardId');
+        const getUserSaveCards = await CardCustomization.find({
+            $or: [{email}, {userId: String(req.user.user_id)}],
+            deleteMyCard: {$ne: true}
+        }).sort({createdAt: -1}).populate('cardId');
 
         return success_response(res, 200, "User all saved cards get successfully", getUserSaveCards);
     } catch (error) {

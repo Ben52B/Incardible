@@ -1,18 +1,19 @@
 const jwt = require('jsonwebtoken');
-const config = process.env;
 const {error_response} = require('../utils/response');
 
 const verify_token = async (req, res, next) => {
     try {
         const token = req.headers['x-access-token'];
         if (!token) {
-            return error_response(res, 400, "Token is required for authentication!");
+            return error_response(res, 401, "Authentication required");
         }
-        const decode = jwt.verify(token, config.TOKEN_KEY);
-        req.user = decode;
+        const decoded = jwt.verify(token, process.env.TOKEN_KEY);
+        if (!decoded || !decoded.user_id) {
+            return error_response(res, 401, "Invalid token");
+        }
+        req.user = decoded;
     } catch (error) {
-        console.log(error);
-        return error_response(res, 500, error.message);
+        return error_response(res, 401, "Invalid or expired token");
     }
     return next();
 }

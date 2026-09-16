@@ -331,7 +331,9 @@ export default function CardsCarousel({ allCards = [] }) {
     if (!cardToDelete) return;
     try {
       setLoadingId(cardToDelete._id);
-      await axios.delete(`${BASE_URL}/api/user/ar-experience/remove-card/${cardToDelete._id}`);
+      await axios.delete(`${BASE_URL}/api/user/ar-experience/remove-card/${cardToDelete._id}`, {
+        headers: { 'x-access-token': localStorage.getItem('token') }
+      });
 
       // ✅ optimistic UI: mark then remove
       setCards((prev) => {

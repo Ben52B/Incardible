@@ -5,9 +5,19 @@ const jwt = require('jsonwebtoken');
 // const Password = require("../../models/password");
 const nodemailer = require("nodemailer");
 
+// Admin accounts can only be created with the one-time setup key from the
+// server environment (ADMIN_SETUP_KEY). Without it the endpoint is closed.
 exports.register = async (req, res) => {
     try {
+        const setupKey = process.env.ADMIN_SETUP_KEY;
+        const provided = req.headers['x-admin-setup-key'];
+        if (!setupKey || !provided || provided !== setupKey) {
+            return error_response(res, 403, "Admin registration is disabled");
+        }
         const {name, email, password} = req.body;
+        if (typeof password !== 'string' || password.length < 10) {
+            return error_response(res, 400, "Password must be at least 10 characters");
+        }
 
         if (!(name && email && password)) {
             return error_response(res, 400, "All inputs are required!");
@@ -25,7 +35,7 @@ exports.register = async (req, res) => {
             name,email,password:encryptedPassword
 
         })
-        return success_response(res, 200, "Admin successfully registered", create);
+        return success_response(res, 200, "Admin successfully registered", {id: create._id, name: create.name, email: create.email});
     } catch (error) {
         console.log(error);
         return error_response(res, 500, error.message);
@@ -54,15 +64,17 @@ exports.login = async (req, res) => {
             return error_response(res, 400, "Invalid Credentials");
         }
 
-        const payload = {id: admin._id, name: admin.name, email: admin.email};
+        const payload = {id: admin._id, name: admin.name, email: admin.email, role: 'admin'};
 
         let jwtToken = jwt.sign(payload, process.env.TOKEN_KEY, {
             expiresIn: '24h',
         });
 
-        admin.token = jwtToken;
+        const safeAdmin = admin.toObject();
+        delete safeAdmin.password;
+        safeAdmin.token = jwtToken;
 
-        return success_response(res, 200, "Admin login successfully", admin);
+        return success_response(res, 200, "Admin login successfully", safeAdmin);
     } catch (error) {
         console.log(error);
         return error_response(res, 500, error.message);

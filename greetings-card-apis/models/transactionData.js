@@ -54,4 +54,10 @@ const transactionSchema = new mongoose.Schema({
     orderId: {type: String, unique: true, required: true}
 }, {timestamps: true});
 
+transactionSchema.index({createdAt: -1});
+transactionSchema.index({status: 1, createdAt: -1});
+transactionSchema.index({user_id: 1});
+transactionSchema.index({cardCustomizationId: 1});
+transactionSchema.index({payment_intent: 1});
+
 module.exports = mongoose.model('transaction_data', transactionSchema);

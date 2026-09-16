@@ -85,9 +85,10 @@ exports.get_all_transaction = async (req, res) => {
                 path: 'cardCustomizationId', populate: [{
                     path: 'cardId', model: 'card'
                 }, {
-                    path: 'userId', model: 'user'
+                    path: 'userId', model: 'user', select: 'firstName lastName email'
                 }]
             })
+            .populate({path: 'user_id', select: 'firstName lastName email'})
             .sort({createdAt: -1})
             .exec();
 

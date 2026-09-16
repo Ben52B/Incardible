@@ -17,9 +17,16 @@ const transport = nodemailer.createTransport({
 // daysjs is used to compare 2 dates and also check cuurent date and calculate how anu days left to the specific date
 const sendNotificationToUserToCompleteCard = async () => {
     try {
-        const users = await cardCustomization.find({ "arTemplateData.isCustomizationComplete": false });
+        // Only unpaid drafts are eligible for reminders/expiry. Paid cards are
+        // printed and must live forever.
+        const users = await cardCustomization.find({
+            "arTemplateData.isCustomizationComplete": false,
+            isPaid: { $ne: true }
+        });
 
         for (const user of users) {
+          try {
+            if (user.isPaid === true) continue; // belt and braces
             const createdDate = dayjs(user.createdAt);
             console.log("createdDate", createdDate)
             const now = dayjs();
@@ -29,6 +36,11 @@ const sendNotificationToUserToCompleteCard = async () => {
 
             const daysLeft = 7 - diffInDays;
             console.log("daysLeft", daysLeft)
+
+            if (!user.email) {
+                // Guest drafts have no address to remind; they are cleaned up by the temp-data job.
+                continue;
+            }
 
             if (diffInDays === 1  || diffInDays === 3 || diffInDays === 6) {
                 // Create styled HTML email
@@ -152,10 +164,13 @@ const sendNotificationToUserToCompleteCard = async () => {
                 console.log(`✅ Styled reminder (Day ${diffInDays}) sent to ${user.email}`);
              }
 
-            if (diffInDays > 7) {
+            if (diffInDays > 7 && user.isPaid !== true) {
                 await cardCustomization.findByIdAndDelete(user._id);
-                console.log(`Deleted user ${user._id} due to expiration`);
+                console.log(`Deleted unpaid draft ${user._id} due to expiration`);
             }
+          } catch (perUserError) {
+            console.error(`Reminder job failed for customization ${user._id}:`, perUserError.message);
+          }
         }
     } catch (error) {
         console.error('Error during daily user card reminder check:', error);

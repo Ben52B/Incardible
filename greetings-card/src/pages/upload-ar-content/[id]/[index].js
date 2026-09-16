@@ -47,31 +47,16 @@ const qrToken =
     ? token[0]
     : null;
 
+// The server resolves the customisation by uuid (paid or guest) itself; the
+// legacy isAuthenticated flag is ignored server-side but kept for compatibility.
 const isUploadAuthenticated = !!qrToken;
 
-const verifyToken = async () => {
-  setVerifyLoading(true);
-  try {
-    if (!qrToken) {
-      setIsTokenValid(false);
-    } else {
-      // Agar chaho to yahan backend se verify hit kar sakti ho
-      setIsTokenValid(true);
-    }
-  } catch (err) {
-    console.error('Token verification failed:', err);
-    setIsTokenValid(false);
-  } finally {
-    setVerifyLoading(false);
-  }
-};
 useEffect(() => {
-  if (qrToken) {
-    verifyToken();
-  } else {
-    setIsTokenValid(false);
-  }
-}, [qrToken]);
+  if (!router.isReady) return;
+  setVerifyLoading(true);
+  setIsTokenValid(typeof id === 'string' && id.length > 0);
+  setVerifyLoading(false);
+}, [router.isReady, id]);
 
 
 

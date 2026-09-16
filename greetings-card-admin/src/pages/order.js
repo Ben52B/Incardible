@@ -50,6 +50,7 @@ import ConfirmationDialog from '../components/confirmationDialogue';
 import PrintIcon from '@mui/icons-material/Print';
 import { useAuth } from '../hooks/use-auth';
 import { useRouter } from 'next/router';
+import { buildArUrl, qrPngDataUrl, qrPngBlob } from '../utils/qr';
 import QRCodeGenerator from '../components/qrCode';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -3226,7 +3227,7 @@ function buildPrintHTML_SameStyle(transaction) {
     iframeDoc.head.appendChild(script);
   };
 
-  const handlePrintClick = (transaction) => {
+  const handlePrintClick = async (transaction) => {
     try {
 
 
@@ -3257,9 +3258,14 @@ function buildPrintHTML_SameStyle(transaction) {
         }
       })();
 
-      const qrDownloadUrl = qrValue
-        ? `https://api.qrserver.com/v1/create-qr-code/?format=png&size=600x600&data=${encodeURIComponent(qrValue)}`
-        : null;
+      let qrDownloadUrl = null;
+      if (qrValue) {
+        try {
+          qrDownloadUrl = await qrPngDataUrl(qrValue, 600);
+        } catch (err) {
+          console.error('Failed to render QR code', err);
+        }
+      }
 
       const image = new Image();
       image.crossOrigin = 'anonymous';
@@ -3591,8 +3597,7 @@ function buildPrintHTML_SameStyle(transaction) {
       const qrValue = buildQrUrl(templateId);
 
       if (qrValue) {
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?format=png&size=400x400&data=${encodeURIComponent(qrValue)}`;
-        const qrBlob = await fetchBlob(qrUrl);
+        const qrBlob = await qrPngBlob(qrValue, 400);
         const qrImage = await loadImageFromBlob(qrBlob);
 
         const canvas = document.createElement('canvas');
@@ -6751,7 +6756,7 @@ function buildPrintHTML_SameStyle(transaction) {
           {/*            }}>*/}
           {/*              <QRCodeGenerator*/}
           {/*                size={100} // bigger QR for print clarity*/}
-          {/*                value={`${AR_EXPERIENCE_LINK}/${selectedTransaction?.cardCustomizationId?._id}`}*/}
+          {/*                value={buildArUrl(selectedTransaction?.cardCustomizationId?._id) || ''}*/}
           {/*              />*/}
           {/*            </div>*/}
           {/*          </div>*/}
@@ -6850,7 +6855,7 @@ function buildPrintHTML_SameStyle(transaction) {
           {/*            }}>*/}
           {/*              <QRCodeGenerator*/}
           {/*                size={150}*/}
-          {/*                value={`${AR_EXPERIENCE_LINK}/${selectedTransaction.cardCustomizationId?._id}`}*/}
+          {/*                value={buildArUrl(selectedTransaction.cardCustomizationId?._id) || ''}*/}
           {/*              />*/}
           {/*            </div>*/}
           {/*          </div>*/}
@@ -6926,7 +6931,7 @@ function buildPrintHTML_SameStyle(transaction) {
 
                           }}>
                           <QRCodeGenerator
-                            value={`${AR_EXPERIENCE_LINK}/${selectedTransaction?.cardCustomizationId?._id}`}
+                            value={buildArUrl(selectedTransaction?.cardCustomizationId?._id) || ''}
                           />
                         </div>
                       )}
@@ -7087,7 +7092,7 @@ function buildPrintHTML_SameStyle(transaction) {
           {/*              /!*}}>*!/*/}
           {/*              <QRCodeGenerator*/}
           {/*                size={10}*/}
-          {/*                value={`${AR_EXPERIENCE_LINK}/${selectedTransaction?.cardCustomizationId?._id}`}/>*/}
+          {/*                value={buildArUrl(selectedTransaction?.cardCustomizationId?._id) || ''}/>*/}
           {/*            </div>*/}
           {/*            /!*</div>*!/*/}
           {/*          </div>*/}

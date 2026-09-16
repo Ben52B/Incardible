@@ -16,6 +16,7 @@ import { useCardContext } from '../../contexts/cardIdContext';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/use-auth';
 import toast from 'react-hot-toast';
+import { buildArUrl } from '../../utils/qr';
 import QRCodeGenerator from '../../components/qrCode';
 
 const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL;
@@ -424,7 +425,7 @@ const Id = () => {
                         boxShadow: 2
                       }}
                     >
-                      <QRCodeGenerator value={`${AR_EXPERIENCE_LINK}/${id}`} style={{
+                      <QRCodeGenerator value={buildArUrl(id) || ''} style={{
                         height: isMobile ? 30 : 100,
                         width: isMobile ? 30 : 100
                       }}/>

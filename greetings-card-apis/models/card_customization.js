@@ -23,4 +23,9 @@ const cardCustomizationSchema = new mongoose.Schema({
     templateTextSS: {type: String, default: null}
 }, {timestamps: true});
 
+cardCustomizationSchema.index({uuid: 1});
+cardCustomizationSchema.index({email: 1});
+cardCustomizationSchema.index({userId: 1});
+cardCustomizationSchema.index({isPaid: 1, createdAt: -1});
+
 module.exports = mongoose.model('card-customization', cardCustomizationSchema);
