@@ -25,6 +25,14 @@
   card, total, shipping address, and the AR QR code / link with an "Open
   preview" button (`GET /api/payment/order/:id`, owner only).
 
+### Website cleanup (first pass)
+- Removed `jsonwebtoken` imports from browser code (dropped a Node crypto polyfill
+  from the main bundle) and deleted `pages/backup.js` (a stale copy of the legacy
+  editor that was live at `/backup`).
+- Site-wide `description` and Open Graph / Twitter metadata in `_app.js`.
+- CI now runs full `next build` for the website and the admin, so lint errors and
+  broken imports fail the pull request instead of the deploy.
+
 ## Not done yet
 - Media on object storage + CDN (needs the AWS details).
 - Delete the legacy editor (`/card-editor`, `/backup`, `public/editor`) once the

@@ -265,7 +265,7 @@ export default function StudioPage() {
       <IconButton aria-label={muted ? 'Unmute preview' : 'Mute preview'} onClick={() => setMuted((m) => !m)} sx={{ position: 'absolute', right: 8, top: 8, bgcolor: 'rgba(0,0,0,.45)', color: '#fff' }} size="small">
         {muted ? <VolumeOffIcon fontSize="small" /> : <VolumeUpIcon fontSize="small" />}
       </IconButton>
-      <Typography variant="caption" sx={{ position: 'absolute', left: 12, bottom: 8, color: 'rgba(255,255,255,.7)' }}>Live preview of what they'll see</Typography>
+      <Typography variant="caption" sx={{ position: 'absolute', left: 12, bottom: 8, color: 'rgba(255,255,255,.7)' }}>Live preview of what they&apos;ll see</Typography>
     </Box>
   );
 

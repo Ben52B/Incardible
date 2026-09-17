@@ -13,6 +13,7 @@ import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import NextLink from 'next/link';
 import { Layout as DashboardLayout } from '../layouts/dashboard/layout';
 import { buildArUrl, qrPngDataUrl } from '../utils/qr';
 import QRCodeGenerator from '../components/qrCode';
@@ -201,7 +202,7 @@ function OrdersPage() {
         </Card>
 
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
-          Looking for the old order page? <a href="/order">Open legacy view</a>.
+          Looking for the old order page? <NextLink href="/order">Open legacy view</NextLink>.
         </Typography>
       </Container>
 

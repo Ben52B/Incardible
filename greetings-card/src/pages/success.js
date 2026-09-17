@@ -43,7 +43,7 @@ export default function SuccessPage() {
         <CheckCircleOutlineIcon sx={{ color: 'success.main', fontSize: 72, mb: 1 }} />
         <Typography variant="h3" sx={{ fontWeight: 800, mb: 1 }}>Thank you for your order</Typography>
         <Typography color="text.secondary" sx={{ mb: 3 }}>
-          We'll print your greeting inside the card and post it to you. You'll receive an email with the details.
+          We&apos;ll print your greeting inside the card and post it to you. You&apos;ll receive an email with the details.
         </Typography>
 
         {state === 'loading' && <CircularProgress />}

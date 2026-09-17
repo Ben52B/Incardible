@@ -15,9 +15,7 @@ import CardActions from '@mui/material/CardActions';
 import CardMedia from '@mui/material/CardMedia';
 import Button from '@mui/material/Button';
 import LandingNav from '../layouts/landing-nav/landingLayout';
-import jwt from 'jsonwebtoken';
 
-import { sign } from 'jsonwebtoken';
 import Footer from '../components/footer';
 import Contact from './contact';
 import Clients from '../components/client';
