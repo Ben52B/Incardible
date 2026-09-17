@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  api:
+    name: API smoke test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: greetings-card-apis
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: greetings-card-apis/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  target-compiler:
+    name: Target compiler check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/target-compiler
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tools/target-compiler/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - name: Compile the sample card
+        run: node compile.mjs /tmp/sample.mind ../../ar-viewer/test/fixtures/sample-card.png
+
+  ar-viewer:
+    name: AR viewer build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ar-viewer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ar-viewer/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ar-viewer-dist
+          path: ar-viewer/dist
+
+  frontends:
+    name: Website and admin syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Full Next.js builds need production env vars; until those live in CI
+      # secrets, parse every source file so syntax errors cannot reach main.
+      - name: Parse all Next.js sources with esbuild
+        run: |
+          npx -y esbuild@0.24.0 --version
+          find greetings-card/src greetings-card-admin/src -name '*.js' -o -name '*.jsx' | while read f; do
+            npx -y esbuild@0.24.0 --loader:.js=jsx --log-level=error "$f" --outfile=/dev/null || { echo "::error file=$f::syntax error"; exit 1; }
+          done
