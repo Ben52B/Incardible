@@ -51,6 +51,12 @@ const expect = (name, cond, detail) => { checks.push({name, ok: !!cond, detail})
         r = await req('GET', '/api/user/ar-experience/get-all-express-shipping-users', {headers: {'x-access-token': userToken}});
         expect('express-shipping list with CUSTOMER token -> 403', r.status === 403, r.status);
 
+        r = await req('GET', '/api/transactions/get-single-transaction-detail/64b000000000000000000000');
+        expect('checkout detail without token -> 401', r.status === 401, r.status);
+        // With a customer token the route must get past auth (DB is down, so 500 not 401/403).
+        r = await req('GET', '/api/transactions/get-single-transaction-detail/64b000000000000000000000', {headers: {'x-access-token': userToken}});
+        expect('checkout detail with CUSTOMER token passes auth', r.status !== 401 && r.status !== 403, r.status);
+
         r = await req('POST', '/api/admin/register', {headers: {'content-type': 'application/json'}, body: '{"name":"x","email":"x@x.com","password":"aaaaaaaaaaaa"}'});
         expect('admin register closed -> 403', r.status === 403, r.status);
 

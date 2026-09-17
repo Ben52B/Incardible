@@ -108,6 +108,22 @@ exports.get_Single_CardCustomization = async (req, res) => {
         }
 
         const userCardCustomizationDetails = await cardCustomization.findOne({_id: id}).populate('cardId');
+        if (!userCardCustomizationDetails) {
+            return error_response(res, 404, "Card customization not found");
+        }
+
+        // Customers may only read their own customisation; admins may read any.
+        if (!req.admin) {
+            const me = await User.findById(req.user.user_id).select('email').lean();
+            const doc = userCardCustomizationDetails;
+            const owns = me && (
+                (doc.userId && String(doc.userId) === String(req.user.user_id)) ||
+                (doc.email && me.email && doc.email.toLowerCase() === me.email.toLowerCase())
+            );
+            if (!owns) {
+                return error_response(res, 403, "This card belongs to another account");
+            }
+        }
 
         return success_response(res, 200, "User card customization detail  fetched successfully", userCardCustomizationDetails);
     } catch (error) {
