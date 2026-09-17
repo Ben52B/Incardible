@@ -30,6 +30,10 @@
   from the main bundle) and deleted `pages/backup.js` (a stale copy of the legacy
   editor that was live at `/backup`).
 - Site-wide `description` and Open Graph / Twitter metadata in `_app.js`.
+- Home-page GIFs re-encoded in place (same dimensions and frames, 128 colours,
+  inter-frame optimisation): 46 MB → 19 MB total; unused `1_1.gif` removed.
+  Converting the two biggest ones to short MP4/WebM clips would save another
+  ~12 MB and is worth doing once an encoder is available in the pipeline.
 - CI now runs full `next build` for the website and the admin, so lint errors and
   broken imports fail the pull request instead of the deploy.
 
