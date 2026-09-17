@@ -2,6 +2,7 @@
 // tracked card. Coordinates: MindAR normalises the target so its width is 1
 // unit and its centre is the origin; +y is up the card, +z is towards the viewer.
 import * as THREE from 'three';
+import { getTemplate, fontStack } from './templates.js';
 
 const pick = (obj, keys, fallback = null) => {
   for (const k of keys) {
@@ -31,14 +32,18 @@ export function parseExperience(json, apiBase) {
     music = `music/${music}`;
   }
   music = abs(music);
-  const effect = String(pick(t, ['effect', 'selectedEffect', 'particleEffect', 'particle', 'selectedEffectPrefab'], 'sparkles')).toLowerCase();
+  const template = getTemplate(pick(t, ['templateId', 'templateName'], pick(t, ['templateIndex'], 0)));
+  const effect = String(pick(t, ['effect', 'effectName', 'selectedEffect', 'particleEffect', 'particle', 'selectedEffectPrefab'], template.effect || 'sparkles')).toLowerCase();
   return {
+    template,
+    fontFamily: fontStack(pick(t, ['fontName', 'font'], template.font)),
+    panelColor: pick(t, ['panelColor'], template.panelColor),
     id: d.id || null,
     isPaid: d.isPaid !== false,
     heading: String(pick(t, ['mainHeading', 'mainHeadingText', 'heading', 'title'], '') || '').trim(),
     paragraph1: String(pick(t, ['paragraph1', 'paragraph1Text', 'message'], '') || '').trim(),
     paragraph2: String(pick(t, ['paragraph2', 'paragraph2Text'], '') || '').trim(),
-    textColor: pick(t, ['textColor'], '#ffffff'),
+    textColor: pick(t, ['textColor'], template.textColor || '#ffffff'),
     photos,
     video,
     music,
@@ -66,15 +71,15 @@ function wrapLines(ctx, text, maxWidth) {
   return out;
 }
 
-export function makeTextPanel({ heading, paragraph1, paragraph2, color = '#ffffff' }, widthUnits = 1.1) {
+export function makeTextPanel({ heading, paragraph1, paragraph2, color = '#ffffff', panelColor = 'rgba(20, 22, 30, 0.82)', fontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif' }, widthUnits = 1.1) {
   const W = 1024, PAD = 56;
   const canvas = document.createElement('canvas');
   canvas.width = W;
   const ctx = canvas.getContext('2d');
   const headingSize = 72, bodySize = 44, lineH = 1.3;
-  ctx.font = `700 ${headingSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+  ctx.font = `700 ${headingSize}px ${fontFamily}`;
   const hLines = heading ? wrapLines(ctx, heading, W - PAD * 2) : [];
-  ctx.font = `400 ${bodySize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+  ctx.font = `400 ${bodySize}px ${fontFamily}`;
   const p1 = paragraph1 ? wrapLines(ctx, paragraph1, W - PAD * 2) : [];
   const p2 = paragraph2 ? wrapLines(ctx, paragraph2, W - PAD * 2) : [];
   const H = Math.ceil(PAD * 2 + hLines.length * headingSize * lineH + (hLines.length ? 24 : 0)
@@ -83,17 +88,17 @@ export function makeTextPanel({ heading, paragraph1, paragraph2, color = '#fffff
   canvas.height = H;
   // Background card
   const r = 40;
-  ctx.fillStyle = 'rgba(20, 22, 30, 0.82)';
+  ctx.fillStyle = panelColor;
   ctx.beginPath();
   ctx.roundRect(0, 0, W, H, r);
   ctx.fill();
   ctx.fillStyle = color;
   ctx.textBaseline = 'top';
   let y = PAD;
-  ctx.font = `700 ${headingSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+  ctx.font = `700 ${headingSize}px ${fontFamily}`;
   for (const l of hLines) { ctx.fillText(l, PAD, y); y += headingSize * lineH; }
   if (hLines.length) y += 24;
-  ctx.font = `400 ${bodySize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+  ctx.font = `400 ${bodySize}px ${fontFamily}`;
   for (const l of p1) { ctx.fillText(l, PAD, y); y += bodySize * lineH; }
   if (p1.length && p2.length) y += 28;
   for (const l of p2) { ctx.fillText(l, PAD, y); y += bodySize * lineH; }
@@ -282,7 +287,7 @@ export function buildContent(exp, cardAspect = 1.4) {
 
   // Text hangs just below the card so it stays in view while the phone is
   // pointed at the card; photos float above the top edge.
-  const text = makeTextPanel({ heading: exp.heading, paragraph1: exp.paragraph1, paragraph2: exp.paragraph2, color: exp.textColor }, 1.1);
+  const text = makeTextPanel({ heading: exp.heading, paragraph1: exp.paragraph1, paragraph2: exp.paragraph2, color: exp.textColor, panelColor: exp.panelColor, fontFamily: exp.fontFamily }, 1.1);
   if (text) {
     text.position.set(0, -(cardH / 2) - 0.06 - (text.userData.aspect * 1.1) / 2, 0.05);
     root.add(text);

@@ -22,6 +22,9 @@ const stubNodeBuiltins = {
 const ctx = await esbuild.context({
   entryPoints: { app: 'src/app.js' },
   plugins: [stubNodeBuiltins],
+  // The shared incardible-ar package is symlinked from ../packages and has no
+  // node_modules of its own; resolve its bare imports (three) from ours.
+  nodePaths: [path.resolve('node_modules')],
   bundle: true,
   format: 'esm',
   minify: !watch,

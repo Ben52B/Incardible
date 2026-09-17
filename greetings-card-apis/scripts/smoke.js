@@ -76,6 +76,10 @@ const expect = (name, cond, detail) => { checks.push({name, ok: !!cond, detail})
         r = await req('POST', '/api/user/login', {headers: {'content-type': 'application/json'}, body: '{bad json'});
         expect('malformed json -> 400', r.status === 400, r.status);
 
+        r = await req('GET', '/api/templates');
+        let tpl = null; try { tpl = JSON.parse(r.body); } catch (_) {}
+        expect('templates catalogue served', r.status === 200 && tpl && tpl.data && tpl.data.templates.length >= 3, r.status);
+
         r = await req('GET', '/uploads/does-not-exist.png');
         expect('static miss -> 404 json', r.status === 404, r.status);
 

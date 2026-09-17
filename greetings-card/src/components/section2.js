@@ -302,7 +302,7 @@ const Section2 = () => {
 
   const gotoEditor = (cardUUID) => {
     const uuid = uuidv4();
-    router.push(`/card-editor/${uuid}?selected=${cardUUID}`);
+    router.push(`/studio/${uuid}?selected=${cardUUID}`);
   };
 
 

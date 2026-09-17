@@ -1,0 +1,17 @@
+{
+  "name": "incardible-ar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared AR experience renderer and template catalogue used by the AR viewer and the design studio preview.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./experience": "./experience.js",
+    "./templates": "./templates.js",
+    "./templates.json": "./templates.json"
+  },
+  "peerDependencies": {
+    "three": ">=0.150"
+  }
+}

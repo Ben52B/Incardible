@@ -36,7 +36,7 @@
 //   const [loadingId, setLoadingId] = React.useState(null);
 //   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
 //   const [cardToDelete, setCardToDelete] = React.useState(null);
-//   const gotoEditor = (uuid, cardUUID) => router.push(`/card-editor/${uuid}?selected=${cardUUID}`);
+//   const gotoEditor = (uuid, cardUUID) => router.push(`/studio/${uuid}?selected=${cardUUID}`);
 
 //   // check here the user created card if is pass 30 days than hide that cards
 //   // also hide cards that are marked for deletion
@@ -299,7 +299,7 @@ export default function CardsCarousel({ allCards = [] }) {
   const swiperRef = useRef(null);
 
   const gotoEditor = (uuid, cardUUID) =>
-    router.push(`/card-editor/${uuid}?selected=${cardUUID}`);
+    router.push(`/studio/${uuid}?selected=${cardUUID}`);
 
   // ✅ derive from STATE
   const validCards = useMemo(() => {

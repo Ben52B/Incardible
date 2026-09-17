@@ -41,6 +41,7 @@ app.use('/contact-us', ContactUs);
 app.use('/profile', Profile);
 app.use('/statistics', PublicStatistics);
 app.use('/unsubscribe', Unsubscribe);
+app.use('/templates', require('../routes/templates'));
 
 
 //admin routes:

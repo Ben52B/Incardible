@@ -2,7 +2,7 @@
 // URL contract (unchanged from the Unity viewer): ?templateId=<CardCustomization _id>
 import * as THREE from 'three';
 import { MindARThree } from 'mind-ar/dist/mindar-image-three.prod.js';
-import { parseExperience, buildContent } from './experience.js';
+import { parseExperience, buildContent } from 'incardible-ar';
 
 const $ = (id) => document.getElementById(id);
 const screens = ['screen-start', 'screen-loading', 'screen-flat', 'screen-error'];
