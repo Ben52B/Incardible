@@ -5,6 +5,14 @@ const authMiddleWare = require('../../middleware/auth');
 const userOrAdmin = require('../../middleware/userOrAdmin');
 
 const {create_transaction, get_all_transaction, approved_status, get_Single_CardCustomization, update_shipping_status, update_shipping_status_new, get_user_news_and_offers_preference, add_tracking_id, delete_transaction} = require('../../controllers/admin/transaction');
+const orders = require('../../controllers/admin/orders');
+
+// Fulfilment (admin only)
+router.get('/orders', middleWare, orders.listOrders);
+router.get('/orders/:id', middleWare, orders.getOrder);
+router.put('/orders/:id/printed', middleWare, orders.setPrinted);
+router.put('/orders/:id/note', middleWare, orders.setNote);
+
 //transaction for user
 router.post('/create', authMiddleWare, create_transaction);
 //transaction for admin

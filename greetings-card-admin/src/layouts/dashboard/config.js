@@ -18,8 +18,8 @@ export const items = [
     icon: <CardsIcon sx={{ fontSize: 28, color: '#c165a0' }} />
   },
   {
-    title: 'Order',
-    path: '/order',
+    title: 'Orders',
+    path: '/orders',
     icon: <OrderIcon sx={{ fontSize: 28, color: '#c165a0' }} />
   },
   {

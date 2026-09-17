@@ -1025,9 +1025,9 @@ function CheckoutFormContent({
 
         toast.dismiss(loadingToast);
         toast.success('Payment successful!');
-        
-        // Redirect to success page
-        router.push('/success');
+
+        // Success page shows the order number and the AR link for this order.
+        router.push(`/success?order=${encodeURIComponent(transactionId)}`);
       }
 
     } catch (error) {
