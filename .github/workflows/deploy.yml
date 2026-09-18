@@ -1,0 +1,243 @@
+name: Deploy
+
+# Manual deploy of the Incardible apps.
+#   api / website / admin  -> the EC2 server behind each hostname, through
+#                             Systems Manager (deploy/remote-deploy.sh)
+#   ar-viewer              -> the S3 bucket behind ar.incardible.com.au and a
+#                             CloudFront invalidation
+# Merging to main does NOT deploy. Run from the Actions tab.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: What to deploy
+        type: choice
+        default: all
+        options: [all, api, website, admin, ar-viewer]
+      ar_mode:
+        description: 'AR viewer: preview (ar.incardible.com.au/next/) or live (replaces the Unity viewer at the root)'
+        type: choice
+        default: preview
+        options: [preview, live]
+      dry_run:
+        description: Only check the servers and print the plan, change nothing
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-2' }}
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      servers: ${{ steps.plan.outputs.servers }}
+      viewer: ${{ steps.plan.outputs.viewer }}
+    steps:
+      - id: plan
+        run: |
+          case "${{ inputs.target }}" in
+            all)       servers='["api","website","admin"]'; viewer=true ;;
+            ar-viewer) servers='[]'; viewer=true ;;
+            *)         servers='["${{ inputs.target }}"]'; viewer=false ;;
+          esac
+          echo "servers=$servers" >> "$GITHUB_OUTPUT"
+          echo "viewer=$viewer" >> "$GITHUB_OUTPUT"
+
+  package:
+    name: Package release
+    needs: plan
+    if: needs.plan.outputs.servers != '[]' && !inputs.dry_run
+    runs-on: ubuntu-latest
+    outputs:
+      key: ${{ steps.up.outputs.key }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Build the release archive
+        run: |
+          tar -czf /tmp/release.tgz \
+            --exclude='*/node_modules' --exclude='*/.next' --exclude='*/out' \
+            --exclude='greetings-card-apis/public/uploads' --exclude='greetings-card-apis/public/music' \
+            --exclude='greetings-card/public/editor' --exclude='*/test' \
+            greetings-card-apis greetings-card greetings-card-admin packages tools deploy
+          ls -la /tmp/release.tgz
+      - id: up
+        name: Upload to the deploy bucket
+        run: |
+          source deploy/aws-lib.sh
+          bucket=$(deploy_bucket)
+          key="releases/${GITHUB_SHA}.tgz"
+          aws s3 cp /tmp/release.tgz "s3://$bucket/$key" --only-show-errors
+          echo "key=$key" >> "$GITHUB_OUTPUT"
+
+  server:
+    name: Deploy ${{ matrix.app }}
+    needs: [plan, package]
+    if: always() && needs.plan.outputs.servers != '[]' && (needs.package.result == 'success' || needs.package.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.plan.outputs.servers) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Resolve the server
+        id: srv
+        env:
+          APP: ${{ matrix.app }}
+          HOST_API: ${{ vars.API_HOST || 'api.incardible.com.au' }}
+          HOST_WEBSITE: ${{ vars.WEBSITE_HOST || 'incardible.com.au' }}
+          HOST_ADMIN: ${{ vars.ADMIN_HOST || 'admin.incardible.com.au' }}
+          ID_API: ${{ vars.EC2_INSTANCE_API }}
+          ID_WEBSITE: ${{ vars.EC2_INSTANCE_WEBSITE }}
+          ID_ADMIN: ${{ vars.EC2_INSTANCE_ADMIN }}
+        run: |
+          set -euo pipefail
+          source deploy/aws-lib.sh
+          up=$(echo "$APP" | tr a-z A-Z)
+          host_var="HOST_$up"; id_var="ID_$up"
+          host=${!host_var}; id=${!id_var:-}
+          [ -n "$id" ] || id=$(instance_for_host "$host")
+          require_ssm_online "$id"
+          echo "Deploying $APP to $id ($host)"
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+          echo "host=$host" >> "$GITHUB_OUTPUT"
+
+      - name: Run the deploy on the server
+        env:
+          APP: ${{ matrix.app }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          RELEASE_KEY: ${{ needs.package.outputs.key }}
+          DIR_API: ${{ vars.API_APP_DIR }}
+          DIR_WEBSITE: ${{ vars.WEBSITE_APP_DIR }}
+          DIR_ADMIN: ${{ vars.ADMIN_APP_DIR }}
+          PM2_API: ${{ vars.API_PM2_NAME }}
+          PM2_WEBSITE: ${{ vars.WEBSITE_PM2_NAME }}
+          PM2_ADMIN: ${{ vars.ADMIN_PM2_NAME }}
+        run: |
+          set -euo pipefail
+          source deploy/aws-lib.sh
+          up=$(echo "$APP" | tr a-z A-Z)
+          dir_var="DIR_$up"; pm2_var="PM2_$up"
+          APP_DIR=${!dir_var:-}; PM2_NAME=${!pm2_var:-}
+          bucket=$(deploy_bucket)
+          aws s3 cp deploy/remote-deploy.sh "s3://$bucket/tools/remote-deploy-${GITHUB_SHA}.sh" --only-show-errors
+          script_url=$(aws s3 presign "s3://$bucket/tools/remote-deploy-${GITHUB_SHA}.sh" --expires-in 3600)
+          echo "::add-mask::$script_url"
+          release_url=""
+          if [ "$DRY_RUN" != 1 ]; then
+            release_url=$(aws s3 presign "s3://$bucket/$RELEASE_KEY" --expires-in 3600)
+            echo "::add-mask::$release_url"
+          fi
+          {
+            echo '#!/bin/bash'
+            echo "export APP='$APP' SHA='$GITHUB_SHA' DRY_RUN='$DRY_RUN' APP_DIR='$APP_DIR' PM2_NAME='$PM2_NAME'"
+            echo "export RELEASE_URL='$release_url'"
+            echo 'curl -fsSL "'"$script_url"'" -o /tmp/incardible-remote-deploy.sh'
+            echo 'bash /tmp/incardible-remote-deploy.sh; rc=$?; rm -f /tmp/incardible-remote-deploy.sh; exit $rc'
+          } > /tmp/bootstrap.sh
+          ssm_run "${{ steps.srv.outputs.id }}" "Incardible deploy $APP ${GITHUB_SHA::7}" /tmp/bootstrap.sh 2400
+
+      - name: Public health check
+        if: ${{ !inputs.dry_run }}
+        env:
+          APP: ${{ matrix.app }}
+          HOST: ${{ steps.srv.outputs.host }}
+        run: |
+          case "$APP" in
+            api) url="https://$HOST/health" ;;
+            *)   url="https://$HOST/" ;;
+          esac
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -m 15 -w '%{http_code}' "$url" || true)
+            case "$code" in 200|30?) echo "$url -> $code"; exit 0 ;; esac
+            sleep 6
+          done
+          echo "::error::$url answered $code after deploy"; exit 1
+
+  ar-viewer:
+    name: Deploy AR viewer (${{ inputs.ar_mode }})
+    needs: plan
+    if: needs.plan.outputs.viewer == 'true' && !inputs.dry_run
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ar-viewer/package-lock.json
+      - run: npm ci
+        working-directory: ar-viewer
+      - run: npm run build
+        working-directory: ar-viewer
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload and invalidate
+        env:
+          MODE: ${{ inputs.ar_mode }}
+          AR_HOST: ${{ vars.AR_HOST || 'ar.incardible.com.au' }}
+          DIST_ID: ${{ vars.AR_CF_DISTRIBUTION_ID }}
+          BUCKET: ${{ vars.AR_BUCKET }}
+          PREFIX: ${{ vars.AR_PREFIX }}
+        run: |
+          set -euo pipefail
+          source deploy/aws-lib.sh
+          if [ -z "$DIST_ID" ] || [ -z "$BUCKET" ]; then
+            read -r DIST_ID BUCKET PREFIX <<<"$(ar_distribution)"
+          fi
+          PREFIX=${PREFIX%/}; [ -n "$PREFIX" ] && PREFIX="$PREFIX/"
+          echo "distribution $DIST_ID, bucket $BUCKET, prefix '${PREFIX}'"
+          if [ "$MODE" = preview ]; then
+            dest="s3://$BUCKET/${PREFIX}next/"; paths="/${PREFIX}next/*"
+          else
+            dest="s3://$BUCKET/${PREFIX}"; paths="/${PREFIX}*"
+            # First cutover only: keep a copy of the Unity viewer for rollback.
+            if ! aws s3 ls "s3://$BUCKET/${PREFIX}legacy-unity/" >/dev/null 2>&1; then
+              echo "Backing up the current root to ${PREFIX}legacy-unity/"
+              aws s3 sync "s3://$BUCKET/${PREFIX}" "s3://$BUCKET/${PREFIX}legacy-unity/" --exclude 'next/*' --exclude 'legacy-unity/*' --only-show-errors
+            fi
+          fi
+          aws s3 sync ar-viewer/dist/ "$dest" --only-show-errors --cache-control 'public, max-age=300' --exclude index.html
+          aws s3 cp ar-viewer/dist/index.html "${dest}index.html" --only-show-errors --cache-control 'no-cache' --content-type 'text/html; charset=utf-8'
+          if [ "$MODE" = live ]; then
+            # Remove the Unity files the new viewer replaced (they are in legacy-unity/).
+            git ls-files ar-greeting-card | sed 's#^ar-greeting-card/##' | while read -r f; do
+              [ -f "ar-viewer/dist/$f" ] || aws s3 rm "s3://$BUCKET/${PREFIX}$f" --only-show-errors 2>/dev/null || true
+            done
+          fi
+          inv=$(aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "$paths" --query 'Invalidation.Id' --output text)
+          echo "invalidation $inv for $paths"
+          aws cloudfront wait invalidation-completed --distribution-id "$DIST_ID" --id "$inv" || echo "::warning::invalidation still in progress"
+          if [ "$MODE" = preview ]; then url="https://$AR_HOST/${PREFIX}next/"; else url="https://$AR_HOST/${PREFIX}"; fi
+          code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' "$url")
+          echo "$url -> $code"
+          [ "$code" = 200 ]
+          echo "### AR viewer ($MODE)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Open on a phone: ${url}?templateId=<CardCustomization id>" >> "$GITHUB_STEP_SUMMARY"
