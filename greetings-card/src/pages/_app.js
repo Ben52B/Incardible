@@ -56,6 +56,13 @@ const App = (props) => {
           name="viewport"
           content="initial-scale=1, width=device-width"
         />
+        <meta name="description" content="Incardible: greeting cards that come to life. Add your photos, video, music and message, we print the card, and the person you send it to scans it to see your augmented-reality greeting." />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={process.env.NEXT_PUBLIC_APP_NAME || 'Incardible'} />
+        <meta property="og:title" content="Incardible: greeting cards that come to life" />
+        <meta property="og:description" content="Add your photos, video and message. We print the card. They scan it and your greeting appears in AR." />
+        <meta property="og:image" content={`${WEB_URL || ''}/logo.png`} />
+        <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <Script
         id="env-config"

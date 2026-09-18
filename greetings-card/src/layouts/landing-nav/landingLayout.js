@@ -302,6 +302,8 @@ export const LandingNav = () => {
 
   });
 
+  const [resetEmail, setResetEmail] = useState('');
+
   const forgetFormik = useFormik({
     initialValues: {
       email: '',
@@ -332,6 +334,7 @@ export const LandingNav = () => {
         );
         toast.success(
           'Reset password verification code send to your email.please check your inbox! ');
+        setResetEmail(values.email.toLowerCase());
         forgetFormik.resetForm();
         handleOpenReset();
         setPasswordLoading(false);
@@ -374,6 +377,7 @@ export const LandingNav = () => {
         const response = await axios.post(API_BASE_URL + '/api/user/reset',
           {
             code: values.code,
+            email: resetEmail || undefined,
             password: values.password,
             confirmPassword: values.confirmPassword
           },
@@ -408,7 +412,7 @@ export const LandingNav = () => {
         const res = await fetch('/api/secure-data');
         const data = await res.json();
         // setSignUpUserData(data.user);
-        setLoginUserData(data.user);
+        setLoginUserData({ ...(data.user || {}), idToken: data.idToken || null });
       } catch (error) {
         console.log('Error fetching secure data', error);
       }
@@ -475,10 +479,8 @@ export const LandingNav = () => {
     const callBackendAfterLogin = async () => {
       //  const name= session.user.name;
       // const email=  session.user.email;
-      const name = loginUserData.name;
-      const email = loginUserData.email;
       try {
-        await SignInWithGoogle({ name, email });
+        await SignInWithGoogle({ idToken: loginUserData.idToken });
         
         // Force refresh auth state after Google login
         await auth.initialize(true);

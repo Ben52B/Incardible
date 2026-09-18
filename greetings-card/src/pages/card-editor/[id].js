@@ -1108,9 +1108,10 @@ const Editor = () => {
         'JsonDataHandlerAndParser',
         'QrLink',
         JSON.stringify({
+          // The uuid is the capability; the session token must never be
+          // rendered into a QR code.
           qrUrl: `${WEB_URL}/upload-ar-content/${userTemplateData?.uuid}`,
-          token
-
+          token: ''
         })
       );
 

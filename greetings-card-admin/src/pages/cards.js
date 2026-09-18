@@ -37,6 +37,8 @@ import Head from 'next/head';
 import { useAuth } from '../hooks/use-auth';
 import { useCardContext } from '../contexts/cardIdContext';
 import CategoryIcon from '@mui/icons-material/Category';
+import CenterFocusStrongIcon from '@mui/icons-material/CenterFocusStrong';
+import { Chip } from '@mui/material';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME;
@@ -238,6 +240,16 @@ const UplaodCards = () => {
       } else {
         toast.error(error.response?.data?.msg || error.message || 'Failed to delete category');
       }
+    }
+  };
+
+  const handleRebuildTarget = async (uuid) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${BASE_URL}/api/cards/compile-target/${uuid}`, {}, { headers: { 'x-access-token': token } });
+      toast.success('AR tracking target is being rebuilt (about 20 seconds). Refresh to see the result.');
+    } catch (error) {
+      toast.error(error?.response?.data?.msg || 'Could not start the rebuild');
     }
   };
 
@@ -808,6 +820,20 @@ const UplaodCards = () => {
                           minWidth: { xs: '100px', md: '120px' }
                         }}>
                           {data.title}
+                          <Box sx={{ mt: 0.5 }}>
+                            {(() => {
+                              const tt = data.trackingTarget || {};
+                              const pts = (tt.targets || []).reduce((a, t) => a + (t.points || 0), 0);
+                              const weak = (tt.targets || []).some((t) => t.quality === 'weak');
+                              const map = {
+                                ready: { label: weak ? `AR target: weak (${pts} pts)` : `AR target: ready (${pts} pts)`, color: weak ? 'warning' : 'success' },
+                                pending: { label: 'AR target: compiling…', color: 'info' },
+                                failed: { label: 'AR target: failed', color: 'error' },
+                              };
+                              const c = map[tt.status] || { label: 'AR target: not built', color: 'default' };
+                              return <Chip size="small" variant="outlined" label={c.label} color={c.color} title={tt.error || (weak ? 'Artwork has few trackable details; re-upload a larger, more detailed image.' : '')} />;
+                            })()}
+                          </Box>
                         </TableCell>
                        
                         <TableCell component="th" scope="row" sx={{
@@ -862,6 +888,12 @@ const UplaodCards = () => {
                             <Tooltip title="Update Card">
                               <IconButton size="small" onClick={() => handleClickEditOpen(data._id)}>
                                 <EditIcon fontSize="small"/>
+                              </IconButton>
+                            </Tooltip>
+
+                            <Tooltip title="Rebuild AR tracking target">
+                              <IconButton size="small" onClick={() => handleRebuildTarget(data.uuid)}>
+                                <CenterFocusStrongIcon fontSize="small"/>
                               </IconButton>
                             </Tooltip>
                           </Box>

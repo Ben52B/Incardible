@@ -20,6 +20,9 @@ const templateDataSchema = new mongoose.Schema({
 
 },{timestamps:true});
 
+templateDataSchema.index({uuid: 1});
+templateDataSchema.index({createdAt: 1});
+
 module.exports = mongoose.model('temporary-template-data', templateDataSchema);
 
 

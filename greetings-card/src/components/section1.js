@@ -1529,9 +1529,7 @@ import CardActions from '@mui/material/CardActions';
 import CardMedia from '@mui/material/CardMedia';
 import Button from '@mui/material/Button';
 
-import jwt from 'jsonwebtoken';
 
-import { sign } from 'jsonwebtoken';
 import Footer from '../components/footer';
 import { useAuth } from '../hooks/use-auth';
 import { useZindexModal } from '../contexts/zindex-control';

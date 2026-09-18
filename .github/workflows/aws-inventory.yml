@@ -1,0 +1,72 @@
+name: AWS inventory
+
+# Read-only. Lists what runs in the AWS account and, through Systems Manager,
+# what runs on each server (OS, Node, PM2 apps, nginx sites, env var names).
+# Never prints secret values. Run it manually from the Actions tab.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-2' }}
+
+jobs:
+  inventory:
+    name: Account and servers
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Who am I
+        run: aws sts get-caller-identity --output table
+
+      - name: EC2 instances
+        run: |
+          aws ec2 describe-instances --query 'Reservations[].Instances[].{Name:Tags[?Key==`Name`]|[0].Value,Id:InstanceId,State:State.Name,Type:InstanceType,IP:PublicIpAddress,AZ:Placement.AvailabilityZone,Role:IamInstanceProfile.Arn,Image:ImageId,Launched:LaunchTime}' --output table
+          echo "## Domains"
+          for h in incardible.com.au api.incardible.com.au admin.incardible.com.au ar.incardible.com.au; do
+            printf '%-26s %s\n' "$h" "$(getent ahostsv4 "$h" | awk '{print $1}' | sort -u | tr '\n' ' ')"
+          done
+
+      - name: Systems Manager reachability
+        run: aws ssm describe-instance-information --query 'InstanceInformationList[].{Id:InstanceId,Ping:PingStatus,Platform:PlatformName,Version:PlatformVersion,Agent:AgentVersion,LastPing:LastPingDateTime}' --output table
+
+      - name: S3 buckets and CloudFront
+        run: |
+          aws s3api list-buckets --query 'Buckets[].{Name:Name,Created:CreationDate}' --output table
+          for b in $(aws s3api list-buckets --query 'Buckets[].Name' --output text); do
+            echo "== $b: $(timeout 90 aws s3 ls "s3://$b" --summarize --recursive 2>/dev/null | tail -2 | tr '\n' ' ' || echo 'no access or too many objects to count')"
+            aws s3 ls "s3://$b/" 2>/dev/null | head -15
+          done
+          echo "## CloudFront"
+          aws cloudfront list-distributions --query 'DistributionList.Items[].{Id:Id,Domain:DomainName,Aliases:join(`,`,Aliases.Items||`[]`),Origin:Origins.Items[0].DomainName,OriginPath:Origins.Items[0].OriginPath,Status:Status}' --output table || echo "no CloudFront access"
+
+      - name: Server inventory through Systems Manager
+        run: |
+          set -euo pipefail
+          source deploy/aws-lib.sh
+          bucket=$(deploy_bucket)
+          aws s3 cp deploy/inventory.sh "s3://$bucket/tools/inventory.sh" --only-show-errors
+          url=$(aws s3 presign "s3://$bucket/tools/inventory.sh" --expires-in 1800)
+          echo "::add-mask::$url"
+          printf '#!/bin/bash\ncurl -fsSL "%s" -o /tmp/inventory.sh && bash /tmp/inventory.sh; rm -f /tmp/inventory.sh\n' "$url" > /tmp/bootstrap.sh
+          failed=0
+          for id in $(aws ssm describe-instance-information --query 'InstanceInformationList[?PingStatus==`Online`].InstanceId' --output text); do
+            name=$(aws ec2 describe-instances --instance-ids "$id" --query 'Reservations[0].Instances[0].Tags[?Key==`Name`]|[0].Value' --output text)
+            echo "::group::$id ($name)"
+            ssm_run "$id" "Incardible inventory" /tmp/bootstrap.sh 300 || failed=1
+            echo "::endgroup::"
+          done
+          if [ "$failed" = 1 ]; then echo "::warning::Inventory failed on at least one instance (see groups above)"; fi
+          offline=$(aws ec2 describe-instances --filters Name=instance-state-name,Values=running --query 'Reservations[].Instances[].InstanceId' --output text | tr '\t' '\n' | grep -vxF -f <(aws ssm describe-instance-information --query 'InstanceInformationList[?PingStatus==`Online`].InstanceId' --output text | tr '\t' '\n') || true)
+          [ -z "$offline" ] || echo "::warning::Running instances not reachable through Systems Manager: $offline (attach an IAM role with AmazonSSMManagedInstanceCore)"

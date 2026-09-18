@@ -209,11 +209,14 @@ export const AuthProvider = (props) => {
     }
   };
 
-  const SignInWithGoogle = async ({ name, email }) => {
+  const SignInWithGoogle = async ({ idToken }) => {
 
     try {
+      if (!idToken) {
+        throw new Error('Google sign-in token missing. Please sign in with Google again.');
+      }
       const response = await axios.post(`${API_BASE_URL}/api/user/google-signin`, {
-      name, email
+        idToken
       });
       setLoginUserData(response.data.data);
       localStorage.setItem('token', response.data.data.token);
@@ -224,7 +227,7 @@ export const AuthProvider = (props) => {
       });
     } catch (error) {
       console.log(error);
-      throw new Error(error.response.data.msg);
+      throw new Error(error?.response?.data?.msg || error.message || 'Google sign-in failed');
     }
   };
 

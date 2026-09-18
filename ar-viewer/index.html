@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Incardible · Your AR card</title>
+  <meta name="description" content="Point your camera at your Incardible card to play its augmented-reality greeting." />
+  <meta property="og:title" content="Your Incardible AR card" />
+  <meta property="og:description" content="Someone made you an augmented-reality greeting card. Open on your phone and point the camera at the card." />
+  <meta name="theme-color" content="#1a1d25" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="app.css" />
+  <script>
+    // Deployment config. The API base can be overridden with ?api= on localhost only.
+    window.INCARDIBLE_CONFIG = { apiBase: 'https://api.incardible.com.au' };
+  </script>
+</head>
+<body>
+  <div id="ar-container"></div>
+
+  <section id="screen-start" class="screen">
+    <div class="brand">
+      <img src="logo.png" alt="Incardible" width="96" height="96" />
+      <h1>Your AR card</h1>
+      <p id="start-subtitle">Someone made this just for you.</p>
+    </div>
+    <button id="btn-start" class="btn primary" type="button">Tap to start</button>
+    <p class="hint">We'll ask to use your camera so the card can come to life.</p>
+    <button id="btn-flat-start" class="btn link" type="button">Can't use the camera? Watch it here</button>
+  </section>
+
+  <section id="screen-loading" class="screen hidden">
+    <div class="spinner" aria-hidden="true"></div>
+    <p id="loading-text">Loading your card…</p>
+    <div class="progress"><div id="progress-bar"></div></div>
+  </section>
+
+  <div id="hud" class="hidden">
+    <div id="scan-hint" class="pill">Point your camera at the card</div>
+    <button id="btn-flat" class="btn small" type="button">Can't scan?</button>
+  </div>
+
+  <section id="screen-flat" class="screen hidden scroll">
+    <div class="flat">
+      <h2 id="flat-heading"></h2>
+      <div id="flat-media"></div>
+      <p id="flat-p1"></p>
+      <p id="flat-p2"></p>
+      <button id="btn-back-ar" class="btn primary" type="button">Try the camera again</button>
+    </div>
+  </section>
+
+  <section id="screen-error" class="screen hidden">
+    <h2>Something went wrong</h2>
+    <p id="error-text"></p>
+    <button id="btn-retry" class="btn primary" type="button">Try again</button>
+  </section>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

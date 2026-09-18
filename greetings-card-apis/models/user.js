@@ -15,4 +15,12 @@ const userSchema = new mongoose.Schema({
     token: {type: String},
 });
 
+const stripSecrets = (_doc, ret) => {
+    for (const f of ['password','confirmPassword']) delete ret[f];
+    return ret;
+};
+userSchema.set('toJSON', {transform: stripSecrets});
+userSchema.set('toObject', {transform: stripSecrets});
+userSchema.index({email: 1});
+
 module.exports = mongoose.model('user', userSchema);

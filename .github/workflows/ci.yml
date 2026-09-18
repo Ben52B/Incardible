@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  api:
+    name: API smoke test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: greetings-card-apis
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: greetings-card-apis/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  target-compiler:
+    name: Target compiler check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/target-compiler
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tools/target-compiler/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - name: Compile the sample card
+        run: node compile.mjs /tmp/sample.mind ../../ar-viewer/test/fixtures/sample-card.png
+
+  ar-viewer:
+    name: AR viewer build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ar-viewer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ar-viewer/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ar-viewer-dist
+          path: ar-viewer/dist
+
+  frontends:
+    name: Website and admin syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Full Next.js builds need production env vars; until those live in CI
+      # secrets, parse every source file so syntax errors cannot reach main.
+      - name: Parse all Next.js sources with esbuild
+        run: |
+          npx -y esbuild@0.24.0 --version
+          find greetings-card/src greetings-card-admin/src -name '*.js' -o -name '*.jsx' | while read f; do
+            npx -y esbuild@0.24.0 --loader:.js=jsx --log-level=error "$f" --outfile=/dev/null || { echo "::error file=$f::syntax error"; exit 1; }
+          done
+
+  studio-e2e:
+    name: Studio end-to-end (headless Chromium)
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.47.0-jammy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install website deps
+        working-directory: greetings-card
+        run: npm ci --no-audit --no-fund
+      - name: Run studio e2e against the mock API
+        working-directory: greetings-card
+        env:
+          HOME: /root
+        run: |
+          export CHROME_PATH="$(ls -d /ms-playwright/chromium-*/chrome-linux/chrome | head -1)"
+          npm run test:studio
+
+  ar-viewer-e2e:
+    name: AR viewer end-to-end (fake camera)
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.47.0-jammy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install compiler and viewer deps
+        run: |
+          (cd tools/target-compiler && npm ci)
+          (cd ar-viewer && npm ci && npm run build)
+      - name: Run viewer e2e
+        working-directory: ar-viewer
+        env:
+          HOME: /root
+        run: |
+          export CHROME_PATH="$(ls -d /ms-playwright/chromium-*/chrome-linux/chrome | head -1)"
+          npm test
+
+  website-build:
+    name: Website production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: greetings-card
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: greetings-card/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: next build (placeholder public env)
+        env:
+          NEXT_PUBLIC_APP_NAME: Incardible
+          NEXT_PUBLIC_API_BASE_URL: https://api.example.invalid
+          NEXT_PUBLIC_WEB_URL: https://www.example.invalid
+          NEXT_PUBLIC_AR_EXPERIENCE_LINK: https://ar.example.invalid
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
+          NEXTAUTH_SECRET: ci-placeholder-secret
+          NEXTAUTH_URL: https://www.example.invalid
+          GOOGLE_CLIENT_ID: ci.apps.googleusercontent.com
+          GOOGLE_CLIENT_SECRET: ci
+        run: npx next build
+
+  admin-build:
+    name: Admin production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: greetings-card-admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: greetings-card-admin/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: next build (static export, placeholder public env)
+        env:
+          NEXT_PUBLIC_APP_NAME: Incardible Admin
+          NEXT_PUBLIC_API_BASE_URL: https://api.example.invalid
+          NEXT_PUBLIC_WEB_URL: https://admin.example.invalid
+          NEXT_PUBLIC_AR_EXPERIENCE_LINK: https://ar.example.invalid
+        run: npx next build

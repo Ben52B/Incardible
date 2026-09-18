@@ -977,7 +977,10 @@ function CheckoutFormContent({
         }
       );
 
-      const { clientSecret, transactionId, paymentIntentId } = paymentIntentResponse.data;
+      const { clientSecret, transactionId, paymentIntentId, quote } = paymentIntentResponse.data;
+      if (quote && Number.isFinite(Number(quote.total)) && Math.abs(Number(quote.total) - Number(finalTotal)) > 0.01) {
+        toast(`Your order total is $${Number(quote.total).toFixed(2)} AUD (incl. shipping and GST).`, { icon: 'ℹ️' });
+      }
 
       // Confirm payment with Stripe
       const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
@@ -1022,9 +1025,9 @@ function CheckoutFormContent({
 
         toast.dismiss(loadingToast);
         toast.success('Payment successful!');
-        
-        // Redirect to success page
-        router.push('/success');
+
+        // Success page shows the order number and the AR link for this order.
+        router.push(`/success?order=${encodeURIComponent(transactionId)}`);
       }
 
     } catch (error) {

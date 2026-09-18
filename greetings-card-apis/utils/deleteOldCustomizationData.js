@@ -65,11 +65,18 @@ const deleteStaleCustomizationData = async () => {
     }
 };
 
-// Schedule the job to run daily at 12 AM server time.
-cron.schedule('0 0 * * *', async () => {
-    console.log('[Cleanup] Running daily stale customization cleanup task...');
-    await deleteStaleCustomizationData();
-});
+// SAFETY: this job deletes the AR experience behind PAID, PRINTED cards (the QR
+// code on the physical card points at CardCustomization._id). It must never run
+// automatically. It is kept only for a deliberate, opt-in retention policy and
+// is disabled unless ENABLE_PAID_DATA_CLEANUP=true is set explicitly.
+if (process.env.ENABLE_PAID_DATA_CLEANUP === 'true') {
+    cron.schedule('0 0 * * *', async () => {
+        console.log('[Cleanup] Running daily stale customization cleanup task...');
+        await deleteStaleCustomizationData();
+    });
+} else {
+    console.log('[Cleanup] Paid customization cleanup job is disabled (ENABLE_PAID_DATA_CLEANUP not set).');
+}
 
 module.exports = {
     deleteStaleCustomizationData,

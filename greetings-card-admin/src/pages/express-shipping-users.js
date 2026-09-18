@@ -57,7 +57,7 @@ const ExpressShippingUsers = () => {
       
       const response = await axios.get(`${BASE_URL}/api/user/ar-experience/get-all-express-shipping-users`, {
         headers: {
-          Authorization: `Bearer ${token}`
+          'x-access-token': token
         }
       });
 

@@ -1,3 +1,4 @@
+const {scheduleCardTargetCompile, compileCardTarget} = require('../../utils/trackingTargets');
 const Cards = require('../../models/card');
 const Users = require('../../models/user');
 const TemplateData = require('../../models/templateData');
@@ -117,6 +118,7 @@ exports.uploadFrontDesign = async (req, res) => {
         }
 
         await card.save();
+        if (req.file) scheduleCardTargetCompile(card._id, {force: true});
 
         return success_response(res, 200, "Front card uploaded successfully", card);
     } catch (error) {
@@ -198,6 +200,7 @@ exports.uploadInsideRightDesign = async (req, res) => {
         }
 
         await card.save();
+        if (req.file) scheduleCardTargetCompile(card._id, {force: true});
 
         return success_response(res, 200, "Inside right card uploaded successfully", card);
     } catch (error) {
@@ -1378,6 +1381,34 @@ exports.uploadtextSS = async (req, res) => {
         }
 
         return error_response(res, 400, "No file uploaded.");
+    } catch (error) {
+        console.error(error);
+        return error_response(res, 500, error.message);
+    }
+};
+
+// --- AR tracking target (admin) -------------------------------------------
+exports.getCardTargetStatus = async (req, res) => {
+    try {
+        const card = await Cards.findOne({uuid: req.params.uuid}).select('uuid title trackingTarget frontDesign insideRightDesign').lean();
+        if (!card) return error_response(res, 404, "Card not found!");
+        return success_response(res, 200, "Tracking target status", card.trackingTarget || {status: 'none'});
+    } catch (error) {
+        console.error(error);
+        return error_response(res, 500, error.message);
+    }
+};
+
+exports.compileCardTarget = async (req, res) => {
+    try {
+        const card = await Cards.findOne({uuid: req.params.uuid}).select('_id');
+        if (!card) return error_response(res, 404, "Card not found!");
+        if (String(req.query.wait) === '1') {
+            const result = await compileCardTarget(card._id, {force: true});
+            return success_response(res, 200, "Tracking target compiled", result);
+        }
+        scheduleCardTargetCompile(card._id, {force: true});
+        return success_response(res, 202, "Tracking target compilation scheduled", {status: 'pending'});
     } catch (error) {
         console.error(error);
         return error_response(res, 500, error.message);

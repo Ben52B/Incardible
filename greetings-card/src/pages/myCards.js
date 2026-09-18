@@ -84,7 +84,7 @@ const LoginUserCards = () => {
   console.log('filteredCards', filteredCards);
 
   const gotoEditor = (uuid, cardUUID) => {
-    router.push(`/card-editor/${uuid}?selected=${cardUUID}`);
+    router.push(`/studio/${uuid}?selected=${cardUUID}`);
   };
 
   return (

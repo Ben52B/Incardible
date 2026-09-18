@@ -57,7 +57,7 @@ const PopularCards = () => {
 
   const gotoEditor = (cardUUID) => {
     const uuid = uuidv4();
-    router.push(`/card-editor/${uuid}?selected=${cardUUID}`);
+    router.push(`/studio/${uuid}?selected=${cardUUID}`);
   };
 
   // Simple logic: show popular cards if available, otherwise show empty array

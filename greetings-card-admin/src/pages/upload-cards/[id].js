@@ -135,7 +135,7 @@ const Page = () => {
           }
         });
 
-        toast.success('Front Card design uploaded successfully.');
+        toast.success('Front Card design uploaded successfully. The AR tracking target is being compiled (about 20 seconds).');
         formik.resetForm();
         setLoading(false);
         document.getElementById('frontDesign').value = '';
@@ -464,7 +464,7 @@ const Page = () => {
             }
           });
 
-        toast.success('Inside right card uploaded successfully.');
+        toast.success('Inside right card uploaded successfully. The AR tracking target is being compiled (about 20 seconds).');
         formik.resetForm();
         setInsideRightLoading(false);
         document.getElementById('insideRightDesign').value = '';

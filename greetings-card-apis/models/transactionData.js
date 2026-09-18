@@ -51,7 +51,18 @@ const transactionSchema = new mongoose.Schema({
     shippedDate: {type: Date, default: null},
     trackingId: {type: String, default: null},
     shippingCompany: {type: String, default: null},
-    orderId: {type: String, unique: true, required: true}
+    orderId: {type: String, unique: true, required: true},
+    // Fulfilment: when the physical card was printed (null = not yet)
+    printedAt: {type: Date, default: null},
+    fulfilmentNote: {type: String, default: null}
 }, {timestamps: true});
+
+transactionSchema.index({createdAt: -1});
+transactionSchema.index({status: 1, createdAt: -1});
+transactionSchema.index({user_id: 1});
+transactionSchema.index({cardCustomizationId: 1});
+transactionSchema.index({payment_intent: 1});
+transactionSchema.index({orderId: 1});
+transactionSchema.index({printedAt: 1});
 
 module.exports = mongoose.model('transaction_data', transactionSchema);
