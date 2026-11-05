@@ -172,14 +172,14 @@ for i in range(4):
     vdim(fz(z2), fz(z1), wr + 6, "585", f"(PANEL {i+1})", ext_from=fx(1690), side="right", horiz=True, size=2.2, tsub=1.8)
 
 # ================================================================ PLAN VIEW 1:40 (front wall at top)
-P0y = 143.0                     # inside face of front wall
+P0y = 141.0                     # inside face of front wall
 px = lambda X: X0 + X * S
 py = lambda D: P0y + D * S       # D = depth into garage
 def prect(X1, X2, D1, D2, **k):
     rect(min(px(X1), px(X2)), min(py(D1), py(D2)), abs(X2 - X1) * S, abs(D2 - D1) * S, **k)
-text(12, 124, "PLAN VIEW (TOP VIEW)", 4.0, "bold")
-text(12, 128.6, "SCALE 1:40", 2.3)
-DMAX = 3650
+text(12, 122, "PLAN VIEW (TOP VIEW)", 4.0, "bold")
+text(12, 126.6, "SCALE 1:40", 2.3)
+DMAX = 3990
 for sgn in (-1, 1):
     prect(sgn * 1660, sgn * 2160, -250, 0, fill="url(#hatch)", sw=0.35)
     prect(sgn * 1960, sgn * 2160, 0, DMAX, fill="url(#hatch)", sw=0.35)
@@ -203,10 +203,10 @@ for sgn in (-1, 1):
 for X in (-1790, 1790, 0):
     prect(X - 20, X + 20, 95, 205, fill="#777", sw=0.12)
 # opener rail and motor
-prect(-20, 20, 200, 3200, fill="#bdbdbd", sw=0.2)
-prect(-170, 170, 3200, 3550, fill="#2b2b2b", sw=0.25)
+prect(-44, 44, 150, 3602, fill="#bdbdbd", sw=0.2)
+prect(-100, 100, 3602, 3972, fill="#2b2b2b", sw=0.25)
 # labels
-leader(px(170), py(3375), px(500), py(3375), "", lines=["GRIFCO LS DRIVE OPENER"])
+leader(px(100), py(3790), px(500), py(3790), "", lines=["GRIFCO LS DRIVE OPENER"])
 leader(px(20), py(2050), px(400), py(1950), "", lines=["OPENER RAIL"])
 leader(px(-1715), py(2300), px(-1350), py(2200), "", lines=["HORIZONTAL TRACK", "(BOTH SIDES)"])
 leader(px(1700), py(1600), px(1300), py(1700), "", anchor="end", lines=["TRACK HANGER FIXED", "TO CEILING (TYP.)"])
@@ -231,7 +231,7 @@ sx = lambda D: SX0 + D * SS
 sz = lambda Z: SY0 - Z * SS
 text(186, 15, "SIDE SECTION (THROUGH OPENING)", 4.0, "bold")
 text(186, 19.6, "SCALE 1:25", 2.3)
-DEND = 3900
+DEND = 4150
 CEIL = 2900
 # floor slab
 line(sx(-700), SY0, sx(DEND), SY0, 0.5)
@@ -255,73 +255,90 @@ for z in (40, 585, 1170, 1755, 2300):
 # bottom seal
 rect(sx(18), sz(15), 45 * SS, 15 * SS, fill="#444", stroke="none")
 
-# --- tracks: vertical -> R305 radius -> horizontal (track centre line)
-TC_D = 85                    # vertical track centre depth
-TR = 305                     # radius
-TH_Z = 2610                  # horizontal track centre line height
-z_tan = TH_Z - TR            # 2305
+HEAD = 2340                   # top of clear opening (after header panel)
+# --- site measured headroom (top of opening to underside of pipe)
+HR_FRONT, HR_LEFT, HR_REAR = 320, 230, 175
+PR = 55
+PF_D, PR_D = 130, 2950        # depth of pipe over opening / rear pipe
+
+# --- tracks: vertical -> radius -> horizontal (track centre line)
+TC_D = 85
+TR = 254
+TH_Z = 2470
+z_tan = TH_Z - TR
 track_path = (f"M{sx(TC_D):.2f},{sz(30):.2f} L{sx(TC_D):.2f},{sz(z_tan):.2f} "
-              f"A{TR*SS:.2f},{TR*SS:.2f} 0 0 1 {sx(TC_D+TR):.2f},{sz(TH_Z):.2f} L{sx(2900):.2f},{sz(TH_Z):.2f}")
+              f"A{TR*SS:.2f},{TR*SS:.2f} 0 0 1 {sx(TC_D+TR):.2f},{sz(TH_Z):.2f} L{sx(2780):.2f},{sz(TH_Z):.2f}")
 a(f'<path d="{track_path}" fill="none" stroke="#000" stroke-width="{50*SS+0.3:.2f}" stroke-linejoin="round"/>')
 a(f'<path d="{track_path}" fill="none" stroke="#cfcfcf" stroke-width="{50*SS-0.35:.2f}" stroke-linejoin="round"/>')
-# horizontal track top line marker (2640)
-# track support angle on wall (vertical) and flag bracket
-rect(sx(0), sz(2560), 20 * SS, 2560 * SS - 0.2, fill="#8c8c8c", sw=0.15)
-# --- torsion assembly (front mount): end bearing plate + drum + shaft
-rect(sx(0), sz(2590), 230 * SS, 220 * SS, fill="#bdbdbd", sw=0.2)
-circle(sx(150), sz(2480), 55 * SS, fill="#4a4a4a", stroke="#000", sw=0.25)
-circle(sx(150), sz(2480), 0.35, fill="#fff", stroke="none")
-# cable from drum to bottom bracket (dashed)
-line(sx(150 - 55), sz(2480), sx(75), sz(60), 0.12, "#000", dash="0.8,0.5")
-# --- door open position (dashed)
-door_open = (f"M{sx(TC_D-25):.2f},{sz(z_tan-120):.2f} L{sx(TC_D-25):.2f},{sz(z_tan):.2f} "
-             f"A{(TR+25)*SS:.2f},{(TR+25)*SS:.2f} 0 0 1 {sx(TC_D+TR):.2f},{sz(TH_Z-TR-25+TR):.2f}")
+rect(sx(0), sz(2420), 20 * SS, 2420 * SS - 0.2, fill="#8c8c8c", sw=0.15)
+# --- torsion assembly (front mount)
+rect(sx(0), sz(2540), 220 * SS, 180 * SS, fill="#bdbdbd", sw=0.2)
+circle(sx(150), sz(2450), 50 * SS, fill="#4a4a4a", stroke="#000", sw=0.25)
+circle(sx(150), sz(2450), 0.35, fill="#fff", stroke="none")
+line(sx(100), sz(2450), sx(75), sz(60), 0.12, "#000", dash="0.8,0.5")
+# --- door open position (dashed) - sits above top of opening
 open_y_top, open_y_bot = sz(TH_Z - 30), sz(TH_Z - 70)
-a(f'<path d="M{sx(TC_D+TR):.2f},{open_y_top:.2f} H{sx(TC_D+TR+2050):.2f} V{open_y_bot:.2f} H{sx(TC_D+TR):.2f}" fill="none" stroke="#000" stroke-width="0.22" stroke-dasharray="1.2,0.7"/>')
-a(f'<path d="M{sx(TC_D+TR):.2f},{open_y_top:.2f} A{(TR-55)*SS:.2f},{(TR-55)*SS:.2f} 0 0 0 {sx(TC_D-30+55):.2f},{sz(z_tan):.2f} L{sx(TC_D-30+55):.2f},{sz(z_tan-260):.2f}" fill="none" stroke="#000" stroke-width="0.22" stroke-dasharray="1.2,0.7"/>')
-
-# --- opener: rail + motor head (top of rail = 2640)
-RAIL_TOP = 2640
-rect(sx(260), sz(RAIL_TOP), (3200 - 260) * SS, 35 * SS, fill="#bdbdbd", sw=0.2)
-rect(sx(3200), sz(RAIL_TOP), 350 * SS, 170 * SS, fill="#2b2b2b", sw=0.25)
-# door arm from top panel bracket to trolley
-line(sx(62), sz(2200), sx(420), sz(RAIL_TOP - 35), 0.45)
-rect(sx(400), sz(RAIL_TOP - 35) - 0.2, 80 * SS, 1.4, fill="#555", stroke="none")
-# front rail bracket to wall
-rect(sx(0), sz(RAIL_TOP), 260 * SS, 20 * SS, fill="#8c8c8c", sw=0.15)
-
-# --- hangers: fixed to concrete soffit only (between pipes)
+a(f'<path d="M{sx(TC_D+TR):.2f},{open_y_top:.2f} H{sx(TC_D+TR+2100):.2f} V{open_y_bot:.2f} H{sx(TC_D+TR):.2f}" fill="none" stroke="#000" stroke-width="0.22" stroke-dasharray="1.2,0.7"/>')
+a(f'<path d="M{sx(TC_D+TR):.2f},{open_y_top:.2f} A{(TR-55)*SS:.2f},{(TR-55)*SS:.2f} 0 0 0 {sx(TC_D-30+55):.2f},{sz(z_tan):.2f} L{sx(TC_D-30+55):.2f},{sz(z_tan-200):.2f}" fill="none" stroke="#000" stroke-width="0.22" stroke-dasharray="1.2,0.7"/>')
+# --- opener rail + motor
+RAIL_TOP = 2490
+rect(sx(150), sz(RAIL_TOP), (3602 - 150) * SS, 47 * SS, fill="#bdbdbd", sw=0.2)
+rect(sx(3602), sz(RAIL_TOP), 370 * SS, 150 * SS, fill="#2b2b2b", sw=0.25)
+line(sx(62), sz(2200), sx(420), sz(RAIL_TOP - 47), 0.45)
+rect(sx(400), sz(RAIL_TOP - 47) - 0.2, 80 * SS, 1.4, fill="#555", stroke="none")
+rect(sx(0), sz(RAIL_TOP), 150 * SS, 20 * SS, fill="#8c8c8c", sw=0.15)
+# --- hangers fixed to ceiling
 def hanger(d, z_bot):
     rect(sx(d) - 0.35, sz(CEIL), 0.7, (CEIL - z_bot) * SS, fill="#777", sw=0.12)
-    rect(sx(d) - 1.0, sz(CEIL), 2.0, 0.5, fill="#000", stroke="none")  # anchor plate
-for d in (1600, 2850):
+    rect(sx(d) - 1.0, sz(CEIL), 2.0, 0.5, fill="#000", stroke="none")
+for d in (1600, 2700):
     hanger(d, TH_Z - 25)
-for d in (3260, 3490):
+for d in (3660, 3910):
     hanger(d, RAIL_TOP)
 
-# --- existing pipe running along ceiling (left to right), clipped to ceiling
-PC, PR = CEIL - 95, 55
-for d in (650, 2250, 3700):           # pipe clips + drop rods
-    rect(sx(d) - 0.25, sz(CEIL), 0.5, (95 - PR) * SS + 0.3, fill="#555", stroke="none")
-rect(sx(0), sz(PC + PR), DEND * SS, 2 * PR * SS, fill="url(#pipeV)", stroke="none")
-line(sx(0), sz(PC + PR), sx(DEND), sz(PC + PR), 0.3)
-line(sx(0), sz(PC - PR), sx(DEND), sz(PC - PR), 0.3)
-for d in (1100, 2600):               # socket joints
-    rect(sx(d), sz(PC + PR + 12), 90 * SS, (2 * PR + 24) * SS, fill="url(#pipeV)", sw=0.25)
-for d in (650, 2250, 3700):           # clip bands
-    rect(sx(d) - 0.5, sz(PC + PR + 8), 1.0, (2 * PR + 16) * SS, fill="#777", sw=0.12)
-breakline_v(sx(DEND), sz(PC + PR + 20), sz(PC - PR - 20))
+# --- existing pipes (site): left side pipe runs front to back; pipe over opening & rear pipe cross
+def pipe_cross(d, z_under):
+    cz = z_under + PR
+    rect(sx(d) - 0.25, sz(CEIL), 0.5, (CEIL - cz - PR) * SS + 0.3, fill="#555", stroke="none")
+    circle(sx(d), sz(cz), PR * SS, fill="url(#pipeV)", stroke="#000", sw=0.3)
+    circle(sx(d), sz(cz), PR * SS * 0.72, fill="none", stroke="#888", sw=0.12)
+    rect(sx(d) - PR * SS - 0.2, sz(cz) - 0.25, 2 * PR * SS + 0.4, 0.5, fill="#777", stroke="none")
+zl = HEAD + HR_LEFT
+for d in (650, 2250, 3700):
+    rect(sx(d) - 0.25, sz(CEIL), 0.5, (CEIL - zl - 2 * PR) * SS + 0.3, fill="#555", stroke="none")
+rect(sx(0), sz(zl + 2 * PR), DEND * SS, 2 * PR * SS, fill="url(#pipeV)", stroke="none")
+line(sx(0), sz(zl + 2 * PR), sx(DEND), sz(zl + 2 * PR), 0.3)
+line(sx(0), sz(zl), sx(DEND), sz(zl), 0.3)
+for d in (1100, 3400):
+    rect(sx(d), sz(zl + 2 * PR + 12), 90 * SS, (2 * PR + 24) * SS, fill="url(#pipeV)", sw=0.25)
+for d in (650, 2250, 3700):
+    rect(sx(d) - 0.5, sz(zl + 2 * PR + 8), 1.0, (2 * PR + 16) * SS, fill="#777", sw=0.12)
+breakline_v(sx(DEND), sz(zl + 2 * PR + 20), sz(zl - 20))
+pipe_cross(PF_D, HEAD + HR_FRONT)
+pipe_cross(PR_D, HEAD + HR_REAR)
 
-# --- leaders / callouts (in clear space)
-leader(sx(2400), sz(PC - PR), sx(2500), sz(2200), "", lines=["EXISTING PIPES"])
-leader(sx(1600) - 0.4, sz(2680), sx(1750), sz(2350), "", lines=["HANGERS FIXED", "TO CEILING"])
-leader(sx(1000), sz(TH_Z) + 0.8, sx(800), sz(2350), "", lines=["HORIZONTAL TRACK", "(BOTH SIDES)"])
-leader(sx(3350), sz(2470), sx(3250), sz(2250), "", lines=["GRIFCO LS DRIVE OPENER", "& RAIL (CEILING HUNG)"])
-leader(sx(1450), sz(TH_Z - 70) + 0.2, sx(1300), sz(1950), "", lines=["DOOR OPEN POSITION"])
-leader(sx(150) + 1.2, sz(2480) + 1.2, sx(300), sz(2150), "", lines=["TORSION SPRING", "ASSY. (FRONT MOUNT)"])
-leader(sx(-125), sz(2375), sx(350), sz(1800), "", lines=["HEADER PANEL 70", "(BY CLIENT)"])
-leader(sx(60), sz(1450), sx(350), sz(1450), "", lines=["SECTIONAL DOOR (CLOSED)", "RECESSED BEHIND FRONT WALL"])
-leader(sx(85) + 0.8, sz(820), sx(350), sz(800), "", lines=["VERTICAL TRACK & ANGLE", "FIXED TO WALL (BOTH SIDES)"])
+# --- top of opening reference line + site measured headroom dims
+def hr_dim(d, z_under, val):
+    x = sx(d)
+    line(x, sz(HEAD), x, sz(z_under), 0.2, "#b00")
+    arrow(x, sz(HEAD), math.pi / 2); arrow(x, sz(z_under), -math.pi / 2)
+    text(x + 0.8, sz(HEAD) - 0.9, str(val), 1.9, "bold", "start", fill="#b00", bg=True)
+hr_dim(330, HEAD + HR_FRONT, HR_FRONT)
+hr_dim(1300, HEAD + HR_LEFT, HR_LEFT)
+hr_dim(PR_D, HEAD + HR_REAR, HR_REAR)
+
+# --- callouts
+leader(sx(PF_D) + 1.2, sz(HEAD + HR_FRONT + PR) + 1.6, sx(450), sz(2170), "", lines=["PIPE OVER OPENING"])
+leader(sx(2000), sz(zl) + 0.1, sx(2050), sz(2170), "", lines=["LEFT SIDE PIPE"])
+leader(sx(PR_D) + 0.4, sz(HEAD + HR_REAR) + 0.1, sx(3050), sz(2170), "", lines=["REAR PIPE"])
+leader(sx(1200), sz(TH_Z) + 0.8, sx(1150), sz(1930), "", lines=["HORIZONTAL TRACK"])
+leader(sx(2700), sz(2440), sx(2650), sz(1930), "", lines=["HANGERS FIXED", "TO CEILING"])
+leader(sx(3800), sz(HEAD), sx(3850), sz(1930), "", lines=["GRIFCO LS DRIVE", "OPENER & RAIL"])
+leader(sx(2000), sz(TH_Z - 70) + 0.2, sx(1900), sz(1650), "", lines=["DOOR OPEN POSITION", "(CLEAR HEIGHT 2340 MIN.)"])
+leader(sx(150) + 1.0, sz(2450) + 1.2, sx(350), sz(1700), "", lines=["TORSION SPRING", "ASSY. (FRONT MOUNT)"])
+leader(sx(-125), sz(2375), sx(350), sz(1420), "", lines=["HEADER PANEL 70", "(BY CLIENT)"])
+leader(sx(60), sz(1150), sx(350), sz(1150), "", lines=["SECTIONAL DOOR (CLOSED)", "RECESSED BEHIND FRONT WALL"])
+leader(sx(85) + 0.8, sz(700), sx(350), sz(700), "", lines=["VERTICAL TRACK & ANGLE", "RECESSED BEHIND WALL"])
 
 # left dims (structural)
 xl = sx(-250) - 4.0
@@ -344,36 +361,35 @@ rect(bx + 3, by + 10, 44, 54, sw=0.2)
 tx = bx + 51
 text(tx, by + 15, "PERFTECH P7995 - ROUND HOLE", 2.2, "bold")
 text(tx, by + 18.2, "(60° STAGGERED)", 2.2, "bold")
-for i, (k, v) in enumerate([("Hole Diameter:", "7.95 mm"), ("Pitch:", "9.53 mm"), ("Open Area:", "62% (nominal)"),
-                             ("Finish:", "Black powder coat"), ("Panels:", "4 x 585 mm")]):
+for i, (k, v) in enumerate([("Hole Diameter:", "7.95 mm"), ("Pitch:", "9.53 mm"), ("Open Area:", "62% (nominal)")]):
     text(tx, by + 25 + i * 4.0, k, 2.0)
     text(tx + 24, by + 25 + i * 4.0, v, 2.0)
 
-# ================================================================ HEIGHT & CLEARANCE SCHEDULE
+# ================================================================ MOTOR
 cx0, cy0, cw, ch = 296, 168, 112, 70
 rect(cx0, cy0, cw, ch, sw=0.35)
-text(cx0 + 3, cy0 + 6, "DOOR SCHEDULE", 2.8, "bold")
-rows = [("Structural opening (H x W)", "2410 x 3320", ""),
-        ("Header panel", "70", "BY CLIENT"),
-        ("Clear opening (H x W)", "2340 x 3320", ""),
-        ("Door size (H x W)", "2340 x 3380", ""),
-        ("Overlap each side", "30", "BEHIND WALL"),
-        ("Panels", "4 x 585", ""),
-        ("Mounting", "Recessed", "INTERNAL FACE"),
-        ("Operator", "Grifco LS Drive", "CEILING HUNG")]
-text(cx0 + 3, cy0 + 11.5, "ITEM", 1.8, "bold"); text(cx0 + 66, cy0 + 11.5, "SIZE (mm)", 1.8, "bold"); text(cx0 + 87, cy0 + 11.5, "REMARK", 1.8, "bold")
-line(cx0 + 2, cy0 + 12.8, cx0 + cw - 2, cy0 + 12.8, 0.2)
-for i, (k, v, r) in enumerate(rows):
-    yy = cy0 + 17 + i * 5.7
-    text(cx0 + 3, yy, k, 1.95)
-    text(cx0 + 66, yy, v, 1.95, "bold")
-    text(cx0 + 87, yy, r, 1.6, fill="#b00" if "VERIFY" in r else "#000")
-    line(cx0 + 2, yy + 1.9, cx0 + cw - 2, yy + 1.9, 0.08, "#999")
+text(cx0 + 3, cy0 + 6, "MOTOR", 2.8, "bold")
+mot = [("Model:", "Grifco LS-Drive GLD-SDO-R2.5M"),
+       ("Duty:", "50 cycles/day - suits 6-car parking"),
+       ("Door Limits:", "160 kg max. / 15 m\u00B2 max. (door 7.9 m\u00B2)"),
+       ("Size / Location:", "3,972 L x 150 H - ceiling, rear centre"),
+       ("Support:", "Hangers fixed to ceiling"),
+       ("Power Supply:", "230-240 V single phase, 225 W, 10 A GPO"),
+       ("", "by client at motor - 3 phase not required"),
+       ("FIP:", "Fire OPEN input: N/O dry contact to terminals"),
+       ("", "1 (trigger) & 2 (common). Latched signal holds"),
+       ("", "door fully open - all other commands ignored")]
+for i, (k, v) in enumerate(mot):
+    yy = cy0 + 12.5 + i * 5.9
+    text(cx0 + 3, yy, k, 2.0)
+    text(cx0 + 33, yy, v, 2.0)
+    if v and (i + 1 == len(mot) or mot[i + 1][0]):
+        line(cx0 + 2, yy + 2.3, cx0 + cw - 2, yy + 2.3, 0.08, "#999")
 
 # ================================================================ TITLE BLOCK
 ty0, ty1 = 243, 289
 rect(10, ty0, 400, ty1 - ty0, sw=0.35)
-for xv in (112, 186, 318):
+for xv in (126, 318):
     line(xv, ty0, xv, ty1, 0.3)
 # specifications
 text(13, ty0 + 5, "SPECIFICATIONS", 2.6, "bold")
@@ -384,34 +400,21 @@ spec = [("Door Type:", "Sectional Garage Door (Perforated Panels)"),
         ("Door Size:", "2,340 H x 3,380 W mm"),
         ("Overlap:", "30 mm each side"),
         ("Panels:", "4 No. x 585 mm high"),
-        ("Track:", "Standard lift (by manufacturer)"),
+        ("Track:", "To suit site headroom (by manufacturer)"),
         ("Colour / Finish:", "Black (powder coat)")]
 for i, (k, v) in enumerate(spec):
     text(13, ty0 + 9.6 + i * 4.1, k, 1.95)
     text(43, ty0 + 9.6 + i * 4.1, v, 1.95)
-# motor
-text(115, ty0 + 5, "MOTOR", 2.6, "bold")
-mot = [("Model:", "Grifco LS Drive"), ("Location:", "Ceiling mounted, rear centre"),
-       ("Support:", "Hangers fixed to ceiling"),
-       ("Power Supply:", "By client, at rear centre"), ("", "(motor location)"),
-       ]
-for i, (k, v) in enumerate(mot):
-    text(115, ty0 + 9.6 + i * 4.1, k, 1.95)
-    text(137, ty0 + 9.6 + i * 4.1, v, 1.95)
 # notes
-text(189, ty0 + 5, "NOTES", 2.6, "bold")
+text(129, ty0 + 5, "NOTES", 2.6, "bold")
 notes = ["All dimensions in millimetres (mm). Do not scale - use figured dimensions.",
-         "Structural opening 2,410 H x 3,320 W. Header panel 70 mm by client.",
-         "Clear opening after header panel: 2,340 H x 3,320 W.",
-         "Door 2,340 H x 3,380 W installed on internal face of front wall (recessed).",
-         "Door overlaps opening by 30 mm each side.",
-         "Client to supply power at rear centre of garage (motor location).",
-         "Perforated panels: Perftech P7995, black powder coat, interior & exterior.",
-         "Drawing for builder coordination. Final details to be confirmed by door manufacturer.",
+         "Door & guides recessed behind front wall - wheels & track approx. 100-150 mm each side of opening.",
+         "Clear height when door is open: 2,340 mm or higher (door & hardware sit above top of opening).",
+         "Wall finishes: site manager advised he will inform us if any cover is added to concrete walls.",
          "DISCLAIMER: Sizes shown may vary to suit site conditions. Confirm all dimensions on site."]
 for i, n in enumerate(notes):
-    text(189, ty0 + 9.3 + i * 4.05, f"{i+1}.", 1.8)
-    text(193, ty0 + 9.3 + i * 4.05, n, 1.8)
+    text(129, ty0 + 10.0 + i * 4.6, f"{i+1}.", 1.95)
+    text(134, ty0 + 10.0 + i * 4.6, n, 1.95)
 # project block
 rows_tb = [("PROJECT:", "GARAGE DOOR SHOP DRAWING", True), ("ADDRESS:", "118 Glass St, Essendon VIC 3040", True),
            ("JOB No.:", "207904", False), ("DATE:", "05 NOVEMBER 2026", False),
