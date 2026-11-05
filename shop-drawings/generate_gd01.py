@@ -319,7 +319,7 @@ leader(sx(1000), sz(TH_Z) + 0.8, sx(800), sz(2350), "", lines=["HORIZONTAL TRACK
 leader(sx(3350), sz(2470), sx(3250), sz(2250), "", lines=["GRIFCO LS DRIVE OPENER", "& RAIL (CEILING HUNG)"])
 leader(sx(1450), sz(TH_Z - 70) + 0.2, sx(1300), sz(1950), "", lines=["DOOR OPEN POSITION"])
 leader(sx(150) + 1.2, sz(2480) + 1.2, sx(300), sz(2150), "", lines=["TORSION SPRING", "ASSY. (FRONT MOUNT)"])
-leader(sx(-125), sz(2375), sx(350), sz(1800), "", lines=["HEADER PANEL 70", "(BY CLIENT - MATERIAL TBC)"])
+leader(sx(-125), sz(2375), sx(350), sz(1800), "", lines=["HEADER PANEL 70", "(BY CLIENT)"])
 leader(sx(60), sz(1450), sx(350), sz(1450), "", lines=["SECTIONAL DOOR (CLOSED)", "RECESSED BEHIND FRONT WALL"])
 leader(sx(85) + 0.8, sz(820), sx(350), sz(800), "", lines=["VERTICAL TRACK & ANGLE", "FIXED TO WALL (BOTH SIDES)"])
 
@@ -353,12 +353,11 @@ for i, (k, v) in enumerate([("Hole Diameter:", "7.95 mm"), ("Pitch:", "9.53 mm")
 cx0, cy0, cw, ch = 296, 168, 112, 70
 rect(cx0, cy0, cw, ch, sw=0.35)
 text(cx0 + 3, cy0 + 6, "DOOR SCHEDULE", 2.8, "bold")
-rows = [("Structural opening (W x H)", "3320 x 2410", ""),
+rows = [("Structural opening (H x W)", "2410 x 3320", ""),
         ("Header panel", "70", "BY CLIENT"),
-        ("Clear opening (W x H)", "3320 x 2340", ""),
-        ("Door size (W x H)", "3380 x 2340", ""),
+        ("Clear opening (H x W)", "2340 x 3320", ""),
+        ("Door size (H x W)", "2340 x 3380", ""),
         ("Overlap each side", "30", "BEHIND WALL"),
-        ("Door edge to side wall", "270", "EACH SIDE"),
         ("Panels", "4 x 585", ""),
         ("Mounting", "Recessed", "INTERNAL FACE"),
         ("Operator", "Grifco LS Drive", "CEILING HUNG")]
@@ -379,11 +378,11 @@ for xv in (112, 186, 318):
 # specifications
 text(13, ty0 + 5, "SPECIFICATIONS", 2.6, "bold")
 spec = [("Door Type:", "Sectional Garage Door (Perforated Panels)"),
-        ("Structural Opening:", "3,320 W x 2,410 H mm"),
-        ("Header Panel:", "70 mm (by client, material TBC)"),
-        ("Clear Opening:", "3,320 W x 2,340 H mm"),
-        ("Door Size:", "3,380 W x 2,340 H mm"),
-        ("Overlap / Side Room:", "30 mm each side / 270 mm each side"),
+        ("Structural Opening:", "2,410 H x 3,320 W mm"),
+        ("Header Panel:", "70 mm (by client)"),
+        ("Clear Opening:", "2,340 H x 3,320 W mm"),
+        ("Door Size:", "2,340 H x 3,380 W mm"),
+        ("Overlap:", "30 mm each side"),
         ("Panels:", "4 No. x 585 mm high"),
         ("Track:", "Standard lift (by manufacturer)"),
         ("Colour / Finish:", "Black (powder coat)")]
@@ -402,13 +401,14 @@ for i, (k, v) in enumerate(mot):
 # notes
 text(189, ty0 + 5, "NOTES", 2.6, "bold")
 notes = ["All dimensions in millimetres (mm). Do not scale - use figured dimensions.",
-         "Structural opening 3,320 W x 2,410 H. Header panel 70 mm by client (material TBC).",
-         "Clear opening after header panel: 3,320 W x 2,340 H.",
-         "Door 3,380 W x 2,340 H installed on internal face of front wall (recessed).",
-         "Door overlaps opening by 30 mm each side; 270 mm from door edge to side walls.",
+         "Structural opening 2,410 H x 3,320 W. Header panel 70 mm by client.",
+         "Clear opening after header panel: 2,340 H x 3,320 W.",
+         "Door 2,340 H x 3,380 W installed on internal face of front wall (recessed).",
+         "Door overlaps opening by 30 mm each side.",
          "Client to supply power at rear centre of garage (motor location).",
          "Perforated panels: Perftech P7995, black powder coat, interior & exterior.",
-         "Drawing for builder coordination. Final details to be confirmed by door manufacturer."]
+         "Drawing for builder coordination. Final details to be confirmed by door manufacturer.",
+         "DISCLAIMER: Sizes shown may vary to suit site conditions. Confirm all dimensions on site."]
 for i, n in enumerate(notes):
     text(189, ty0 + 9.3 + i * 4.05, f"{i+1}.", 1.8)
     text(193, ty0 + 9.3 + i * 4.05, n, 1.8)
