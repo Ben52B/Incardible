@@ -323,9 +323,6 @@ def hr_dim(d, z_under, val):
     line(x, sz(HEAD), x, sz(z_under), 0.2, "#b00")
     arrow(x, sz(HEAD), math.pi / 2); arrow(x, sz(z_under), -math.pi / 2)
     text(x + 0.8, sz(HEAD) - 0.9, str(val), 1.9, "bold", "start", fill="#b00", bg=True)
-hr_dim(330, HEAD + HR_FRONT, HR_FRONT)
-hr_dim(1300, HEAD + HR_LEFT, HR_LEFT)
-hr_dim(PR_D, HEAD + HR_REAR, HR_REAR)
 
 # --- callouts
 leader(sx(PF_D) + 1.2, sz(HEAD + HR_FRONT + PR) + 1.6, sx(450), sz(2170), "", lines=["PIPE OVER OPENING"])
