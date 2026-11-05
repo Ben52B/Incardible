@@ -125,90 +125,51 @@ a('''<defs>
 rect(0, 0, 420, 297, fill="#fff", stroke="none")
 rect(6, 6, 408, 285, sw=0.5)
 
-# ================================================================ FRONT ELEVATION 1:40 (INTERNAL VIEW)
+# ================================================================ FRONT ELEVATION 1:40
 S = 1 / 40
 X0, Y0 = 95.0, 100.0           # door centre line, floor level
 fx = lambda X: X0 + X * S
 fz = lambda Z: Y0 - Z * S
-text(12, 15, "FRONT ELEVATION (INTERNAL VIEW)", 4.0, "bold")
-text(12, 19.6, "SCALE 1:40   -   VIEWED FROM INSIDE", 2.3)
-CE = 2900                       # ceiling (drawn only, not dimensioned)
-# inner face of front wall (elevation)
-rect(fx(-1960), fz(CE), 3920 * S, CE * S, fill="#f4f4f4", sw=0.25)
-# side walls & ceiling (cut)
-for sgn in (-1, 1):
-    xa, xb = sorted((fx(sgn * 1960), fx(sgn * 2160)))
-    rect(xa, fz(CE), xb - xa, CE * S, fill="url(#hatch)", sw=0.35)
-rect(fx(-2160), fz(CE + 150), 4320 * S, 150 * S, fill="url(#hatch)", sw=0.35)
-breakline_v(fx(-2160), fz(CE + 150), Y0); breakline_v(fx(2160), fz(CE + 150), Y0)
-# header panel (visible above door)
+text(12, 15, "FRONT ELEVATION (EXTERNAL VIEW)", 4.0, "bold")
+text(12, 19.6, "SCALE 1:40", 2.3)
+
+# wall face (front wall incl. lintel) with opening cut out
+wl, wr, wt = fx(-1960), fx(1960), fz(2900)
+a(f'<path d="M{wl:.2f},{wt:.2f} H{wr:.2f} V{Y0:.2f} H{fx(1660):.2f} V{fz(2410):.2f} H{fx(-1660):.2f} V{Y0:.2f} H{wl:.2f} Z" fill="url(#hatch)" stroke="#000" stroke-width="0.35"/>')
+breakline_v(wl, wt, Y0); breakline_v(wr, wt, Y0)
+text(X0, fz(2700), "EXISTING CONCRETE WALL / LINTEL", 1.9, anchor="middle", bg=True)
+text(X0, fz(2410) - 1.0, "HEADER PANEL 70 (BY CLIENT)", 1.8, "bold", anchor="middle", bg=True)
+# header panel
 rect(fx(-1660), fz(2410), 3320 * S, 70 * S, fill="url(#hatchH)", sw=0.25)
-# opening jambs / lintel line
-line(fx(-1660), fz(2410), fx(1660), fz(2410), 0.3)
-# door (in front of wall)
+# door visible through opening
 for i in range(4):
     zb = i * 585
-    rect(fx(-1690), fz(zb + 585), 3380 * S, 585 * S, fill="#1e1e1e", stroke="#000", sw=0.2)
-    rect(fx(-1690), fz(zb + 585) + 0.9, 3380 * S, 585 * S - 1.8, fill="url(#perf)", stroke="#444", sw=0.15)
-    line(fx(-1690), fz(zb), fx(1690), fz(zb), 0.35, "#000")
-rect(fx(-1690), fz(2340), 3380 * S, 2340 * S, sw=0.4)
-# opening jambs hidden behind door
-for X in (-1660, 1660):
-    line(fx(X), fz(0), fx(X), fz(2340), 0.18, "#bbb", dash="1.2,0.7")
-# vertical tracks, flag brackets, horizontal tracks (end view)
-for sgn in (-1, 1):
-    xa, xb = sorted((fx(sgn * 1690), fx(sgn * 1765)))
-    rect(xa, fz(2400), xb - xa, 2400 * S, fill="#a8a8a8", sw=0.2)
-    xa, xb = sorted((fx(sgn * 1690), fx(sgn * 1790)))
-    rect(xa, fz(2640), xb - xa, 300 * S, fill="#c9c9c9", sw=0.2)
-    xa, xb = sorted((fx(sgn * 1715), fx(sgn * 1760)))
-    rect(xa, fz(2640), xb - xa, 55 * S, fill="#777", sw=0.15)
-# torsion shaft, springs, drums
-line(fx(-1790), fz(2480), fx(1790), fz(2480), 0.45)
-for sgn in (-1, 1):
-    xa, xb = sorted((fx(sgn * 150), fx(sgn * 1150)))
-    rect(xa, fz(2510), xb - xa, 60 * S, fill="#333", sw=0.15)
-    xa, xb = sorted((fx(sgn * 1700), fx(sgn * 1760)))
-    rect(xa, fz(2535), xb - xa, 110 * S, fill="#555", sw=0.15)
-rect(fx(-25), fz(2560), 50 * S, 160 * S, fill="#888", sw=0.15)
-# opener rail (end view) and door arm
-rect(fx(-25), fz(2640), 50 * S, 35 * S, fill="#bdbdbd", sw=0.15)
-line(fx(0), fz(2605), fx(0), fz(2250), 0.4)
-# existing pipe drop at RH internal corner (as per site photo)
-PX1, PX2 = 1790, 1900
-rect(fx(PX1), fz(CE), (PX2 - PX1) * S, (CE - 2470) * S, fill="url(#pipeH)", sw=0.25)
-a(f'<path d="M{fx(PX1):.2f},{fz(2470):.2f} Q{fx(PX1):.2f},{fz(2400):.2f} {fx(1960):.2f},{fz(2400):.2f} L{fx(1960):.2f},{fz(2510):.2f} Q{fx(PX2):.2f},{fz(2510):.2f} {fx(PX2):.2f},{fz(2470):.2f}" fill="#d4d4d4" stroke="#000" stroke-width="0.25"/>')
-for z in (2780, 2600):
-    rect(fx(PX1 - 8), fz(z + 25), (PX2 - PX1 + 16) * S, 50 * S, fill="#aaa", sw=0.15)
-leader(fx(PX2) + 0.2, fz(2700), fx(2300), fz(2700), "", lines=["EXISTING PIPE", "SIDE ROOM 100", "AT THIS LOCATION"], size=1.8)
-# 100 dim (door edge to pipe)
-yy = fz(2800)
-line(fx(1690), fz(2600), fx(1690), yy - 1, 0.13)
-line(fx(1690), yy, fx(PX1), yy, 0.18)
-arrow(fx(1690), yy, math.pi); arrow(fx(PX1), yy, 0)
-text(fx(1600), yy + 0.8, "100", 2.0, "bold", "end", bg=True)
-# floor
-line(fx(-2160) - 3, Y0, fx(2160) + 3, Y0, 0.5)
-rect(fx(-2160) - 3, Y0, 4320 * S + 6, 1.6, fill="url(#hatch)", stroke="none")
-leader(fx(-1300), fz(2375), fx(-1450), fz(2720), "", lines=["HEADER PANEL 70 (BY CLIENT)"], size=1.8)
+    rect(fx(-1660), fz(zb + 585), 3320 * S, 585 * S, fill="#1e1e1e", stroke="#000", sw=0.2)
+    rect(fx(-1660) + 0.0, fz(zb + 585) + 0.9, 3320 * S, 585 * S - 1.8, fill="url(#perf)", stroke="#444", sw=0.15)
+    line(fx(-1660), fz(zb), fx(1660), fz(zb), 0.35, "#000")
+rect(fx(-1660), fz(2410), 3320 * S, 2410 * S, sw=0.4)
+# hidden door edges (30 overlap behind wall)
+rect(fx(-1690), fz(2340), 3380 * S, 2340 * S, stroke="#000", sw=0.22, dash="1.2,0.7")
+# ground
+line(wl - 4, Y0, wr + 4, Y0, 0.5)
+rect(wl - 4, Y0, wr - wl + 8, 1.6, fill="url(#hatch)", stroke="none")
+
 # dimensions - bottom
-hdim(fx(-1960), fx(-1660), Y0 + 4.0, "300", ext_from=Y0 + 0.5, below=True, size=2.0)
-hdim(fx(-1660), fx(1660), Y0 + 4.0, "3320", "(STRUCTURAL OPENING)", ext_from=Y0 + 0.5, below=True, size=2.2)
-hdim(fx(1660), fx(1960), Y0 + 4.0, "300", ext_from=Y0 + 0.5, below=True, size=2.0)
-hdim(fx(-1960), fx(-1690), Y0 + 13.0, "270", ext_from=Y0 + 0.5, below=True, size=2.0)
-hdim(fx(-1690), fx(1690), Y0 + 13.0, "3380", "(DOOR WIDTH)", ext_from=Y0 + 0.5, below=True, size=2.2)
-hdim(fx(1690), fx(1960), Y0 + 13.0, "270", ext_from=Y0 + 0.5, below=True, size=2.0)
+hdim(fx(-1960), fx(-1660), Y0 + 8.5, "300", ext_from=Y0 + 0.5, size=2.2)
+hdim(fx(-1660), fx(1660), Y0 + 8.5, "3320", "(STRUCTURAL OPENING WIDTH)", ext_from=Y0 + 0.5)
+hdim(fx(1660), fx(1960), Y0 + 8.5, "300", ext_from=Y0 + 0.5, size=2.2)
+hdim(fx(-1690), fx(1690), fz(2900) - 2.5, "3380", "(DOOR WIDTH - 30 OVERLAP EACH SIDE, HIDDEN)", size=2.2)
+for X in (-1690, 1690):
+    line(fx(X), fz(2900) - 3.5, fx(X), fz(2340), 0.13, dash="1.2,0.7")
 # dimensions - left
-wl, wr = fx(-2160), fx(2160)
-vdim(fz(0), fz(2340), wl - 6.5, "2340", "(DOOR HEIGHT)", ext_from=fx(-1690) - 0.5)
+vdim(fz(0), fz(2340), wl - 6.5, "2340", "(CLEAR OPENING / DOOR HEIGHT)", ext_from=wl - 1)
 vdim(fz(0), fz(2410), wl - 14.5, "2410", "(STRUCTURAL OPENING)", ext_from=wl - 1)
-line(fx(-1660), fz(2410), wl - 1, fz(2410), 0.13)
-vdim(fz(2340), fz(2410), wl - 6.5, "")
-text(wl - 6.5, fz(2410) - 1.6, "70", 2.0, "bold", "middle")
+vdim(fz(2340), fz(2410), wl - 6.5, "", ext_from=wl - 1)
+text(wl - 7.3, fz(2420) - 1.8, "70", 2.0, "bold", "middle")
 # dimensions - right (panels)
 for i in range(4):
     z1, z2 = 2340 - i * 585, 2340 - (i + 1) * 585
-    vdim(fz(z2), fz(z1), wr + 4, "585", f"(PANEL {i+1})", ext_from=fx(1690), side="right", horiz=True, size=2.2, tsub=1.8)
+    vdim(fz(z2), fz(z1), wr + 6, "585", f"(PANEL {i+1})", ext_from=fx(1690), side="right", horiz=True, size=2.2, tsub=1.8)
 
 # ================================================================ PLAN VIEW 1:40 (front wall at top)
 P0y = 143.0                     # inside face of front wall
@@ -244,9 +205,6 @@ for X in (-1790, 1790, 0):
 # opener rail and motor
 prect(-20, 20, 200, 3200, fill="#bdbdbd", sw=0.2)
 prect(-170, 170, 3200, 3550, fill="#2b2b2b", sw=0.25)
-# existing pipe drop at RH corner
-circle(px(1845), py(100), 55 * S, fill="url(#pipeH)", stroke="#000", sw=0.25)
-leader(px(1880), py(130), px(2350), py(450), "", lines=["EXISTING PIPE", "(SIDE ROOM 100)"], size=1.8)
 # labels
 leader(px(170), py(3375), px(500), py(3375), "", lines=["GRIFCO LS DRIVE OPENER"])
 leader(px(20), py(2050), px(400), py(1950), "", lines=["OPENER RAIL"])
@@ -448,7 +406,6 @@ notes = ["All dimensions in millimetres (mm). Do not scale - use figured dimensi
          "Clear opening after header panel: 3,320 W x 2,340 H.",
          "Door 3,380 W x 2,340 H installed on internal face of front wall (recessed).",
          "Door overlaps opening by 30 mm each side; 270 mm from door edge to side walls.",
-         "Existing pipe at RH internal corner reduces side room to 100 mm locally (see front elevation).",
          "Client to supply power at rear centre of garage (motor location).",
          "Perforated panels: Perftech P7995, black powder coat, interior & exterior.",
          "Drawing for builder coordination. Final details to be confirmed by door manufacturer."]
